@@ -122,27 +122,37 @@
         document.getElementById('report-date').valueAsDate = new Date();
 
         const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkTbgVZmqUfy2tr9WS7lIkFjFPe2_6ws1YeuZdvB5syDdbCQCRkGwCoOVM-lcjVNEUo-scS4QajqJV/pub?gid=987654321&single=true&output=tsv";
-        // Google Sheets doesn't send CORS headers, so we route through a proxy
-        const PROXY_URL = "https://api.allorigins.win/raw?url=" + encodeURIComponent(SHEET_URL);
+        
+        // Fallback array of CORS proxies to ensure high availability
+        const PROXIES = [
+            "https://api.codetabs.com/v1/proxy?quest=",
+            "https://api.allorigins.win/raw?url=",
+            "https://corsproxy.io/?"
+        ];
 
         document.getElementById('fetch-btn').addEventListener('click', async () => {
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('fetch-btn').disabled = true;
             
             try {
-                const response = await fetch(PROXY_URL);
-                if (!response.ok) {
-                    // Try fallback proxy if allorigins fails
-                    const fbResponse = await fetch("https://corsproxy.io/?" + encodeURIComponent(SHEET_URL));
-                    if (!fbResponse.ok) throw new Error('Failed to fetch data from proxy');
-                    const tsv = await fbResponse.text();
-                    generateTable(tsv);
-                } else {
-                    const tsv = await response.text();
-                    generateTable(tsv);
+                let tsv = null;
+                
+                for (const proxyBase of PROXIES) {
+                    try {
+                        const response = await fetch(proxyBase + encodeURIComponent(SHEET_URL));
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        tsv = await response.text();
+                        break; // Success, exit the proxy loop
+                    } catch (err) {
+                        console.warn(`Proxy ${proxyBase} failed:`, err);
+                    }
                 }
                 
+                if (!tsv) {
+                    throw new Error('All CORS proxies failed. Google Sheets may be blocking the requests, or you may be offline.');
+                }
                 
+                generateTable(tsv);
                 // Format subtitle date
                 const dateVal = document.getElementById('report-date').value;
                 const dateObj = new Date(dateVal + 'T00:00:00'); // avoid timezone offset
