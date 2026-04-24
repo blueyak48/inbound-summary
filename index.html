@@ -62,9 +62,19 @@
         <h1 class="text-2xl font-bold text-slate-900">Generate Rail Summary</h1>
         <p class="text-slate-600">Fetch the latest pivot table from Google Sheets to generate the summary.</p>
         
-        <div class="flex gap-4 items-center">
-            <label class="font-semibold">Report Date (for highlighting):</label>
-            <input type="date" id="report-date" class="border border-gray-300 rounded px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none">
+        <div class="flex flex-col gap-4 w-full max-w-md">
+            <div class="flex justify-between items-center w-full gap-4">
+                <label class="font-semibold whitespace-nowrap">Report Type:</label>
+                <select id="report-type" class="w-full border border-gray-300 rounded px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                    <option value="inbound">Rail Inbound Summary</option>
+                    <option value="po">Purchase Order Summary</option>
+                </select>
+            </div>
+
+            <div class="flex justify-between items-center w-full gap-4">
+                <label class="font-semibold whitespace-nowrap">Report Date:</label>
+                <input type="date" id="report-date" class="w-full border border-gray-300 rounded px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
         </div>
 
         <button id="fetch-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition shadow-sm self-start flex items-center gap-2">
@@ -123,7 +133,8 @@
         // Set default date
         document.getElementById('report-date').valueAsDate = new Date();
 
-        const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkTbgVZmqUfy2tr9WS7lIkFjFPe2_6ws1YeuZdvB5syDdbCQCRkGwCoOVM-lcjVNEUo-scS4QajqJV/pub?gid=987654321&single=true&output=tsv";
+        const INBOUND_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkTbgVZmqUfy2tr9WS7lIkFjFPe2_6ws1YeuZdvB5syDdbCQCRkGwCoOVM-lcjVNEUo-scS4QajqJV/pub?gid=987654321&single=true&output=tsv";
+        const PO_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkTbgVZmqUfy2tr9WS7lIkFjFPe2_6ws1YeuZdvB5syDdbCQCRkGwCoOVM-lcjVNEUo-scS4QajqJV/pub?gid=0&single=true&output=tsv";
         
         // Fallback array of CORS proxies to ensure high availability
         const PROXIES = [
@@ -136,6 +147,9 @@
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('fetch-btn').disabled = true;
             
+            const reportType = document.getElementById('report-type').value;
+            const SHEET_URL = reportType === 'inbound' ? INBOUND_URL : PO_URL;
+
             try {
                 let tsv = null;
                 
@@ -154,12 +168,28 @@
                     throw new Error('All CORS proxies failed. Google Sheets may be blocking the requests, or you may be offline.');
                 }
                 
-                generateTable(tsv);
+                if (reportType === 'inbound') {
+                    generateTable(tsv);
+                } else {
+                    generatePOTable(tsv);
+                }
+                
                 // Format subtitle date
                 const dateVal = document.getElementById('report-date').value;
                 const dateObj = new Date(dateVal + 'T00:00:00'); // avoid timezone offset
                 const options = { month: 'long', day: 'numeric', year: 'numeric' };
-                document.getElementById('report-subtitle').innerText = `Summary of Inbound Car Counts - ${dateObj.toLocaleDateString('en-US', options)}`;
+                let titleDisplay = document.querySelector('#preview-view h2');
+                let subtitleText = 'Summary of Inbound Car Counts';
+                
+                if (reportType === 'inbound') {
+                    titleDisplay.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg> RAIL INBOUND SUMMARY`;
+                    subtitleText = 'Summary of Inbound Car Counts';
+                } else {
+                    titleDisplay.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg> PURCHASE ORDER SUMMARY`;
+                    subtitleText = 'Summary of Active Purchase Orders';
+                }
+                
+                document.getElementById('report-subtitle').innerText = `${subtitleText} - ${dateObj.toLocaleDateString('en-US', options)}`;
                 
                 document.getElementById('setup-view').style.display = 'none';
                 document.getElementById('preview-view').style.display = 'flex';
@@ -380,6 +410,154 @@
                 
                 if(isGrandTotal) break; // End of table
             }
+        }
+
+        function generatePOTable(tsv) {
+            const lines = tsv.split(/\r?\n/).filter(line => line.trim().length > 0);
+            if(lines.length === 0) return;
+
+            const headers = lines[0].split('\t').map(h => h.trim());
+            const colMap = {};
+            headers.forEach((h, i) => colMap[h] = i);
+
+            const poMap = new Map();
+            
+            for(let i = 1; i < lines.length; i++) {
+                const row = lines[i].split('\t');
+                const po = row[colMap['Purchase Order']] ? row[colMap['Purchase Order']].trim() : '';
+                if(!po) continue;
+                
+                const poLower = po.toLowerCase();
+                if(poLower.includes('outbound') || poLower.includes('ict') || poLower.includes('return')) continue;
+
+                const loc = row[colMap['Delivery Location']] ? row[colMap['Delivery Location']].trim() : '';
+                const prod = row[colMap['Product']] ? row[colMap['Product']].trim() : '';
+                const vendor = row[colMap['Vendor']] ? row[colMap['Vendor']].trim() : '';
+                const month = row[colMap['Contract Month']] ? row[colMap['Contract Month']].trim() : '';
+                const waybill = row[colMap['Waybill Date']] ? row[colMap['Waybill Date']].trim() : '';
+                const eta = row[colMap['Current ETA']] ? row[colMap['Current ETA']].trim() : '';
+                const tripComplete = row[colMap['Trip Complete']] ? row[colMap['Trip Complete']].toLowerCase().trim() : '';
+
+                const mapKey = `${po}_${loc}_${prod}`; // Unique key to handle edge cases if PO is reused across locs
+
+                if(!poMap.has(mapKey)) {
+                    poMap.set(mapKey, {
+                        po: po,
+                        loc: loc,
+                        prod: prod,
+                        vendor: vendor,
+                        month: month,
+                        total: 0,
+                        received: 0,
+                        shipped: 0,
+                        etas: []
+                    });
+                }
+
+                const pData = poMap.get(mapKey);
+                pData.total++;
+                
+                if(tripComplete === 'yes') {
+                    pData.received++;
+                } else {
+                    if(waybill) {
+                        pData.shipped++;
+                    }
+                    if(eta) {
+                        pData.etas.push(eta);
+                    }
+                }
+            }
+
+            const activePOs = Array.from(poMap.values()).filter(p => p.total > p.received);
+
+            activePOs.sort((a, b) => {
+                if(a.loc !== b.loc) return a.loc.localeCompare(b.loc);
+                if(a.prod !== b.prod) return a.prod.localeCompare(b.prod);
+                return a.po.localeCompare(b.po);
+            });
+
+            const thead = document.getElementById('table-head-row');
+            thead.className = "text-slate-600 border-b border-gray-300 uppercase tracking-wider font-semibold bg-slate-100";
+            
+            const thClass = "px-3 py-3 align-bottom leading-tight whitespace-nowrap text-[11px] sm:text-xs text-left";
+            const thNumClass = "px-3 py-3 align-bottom leading-tight whitespace-nowrap text-center text-[11px] sm:text-xs";
+            thead.innerHTML = `
+                <th class="${thClass}">Delivery Location</th>
+                <th class="${thClass}">Product</th>
+                <th class="${thClass}">Purchase Order</th>
+                <th class="${thClass}">Vendor</th>
+                <th class="${thNumClass} text-left">Contract Month</th>
+                <th class="${thNumClass}">Total Ordered</th>
+                <th class="${thNumClass}">Received</th>
+                <th class="${thNumClass}">Shipped</th>
+                <th class="${thClass}">ETA Next Car</th>
+            `;
+
+            const tbody = document.getElementById('table-body');
+            let html = '';
+
+            let lastLoc = '';
+            let lastProd = '';
+
+            activePOs.forEach((p, idx) => {
+                let dispLoc = p.loc !== lastLoc ? p.loc : '';
+                let dispProd = (p.loc !== lastLoc || p.prod !== lastProd) ? p.prod : '';
+                
+                lastLoc = p.loc;
+                lastProd = p.prod;
+
+                let borderClass = '';
+                if (dispLoc !== '' && idx > 0) borderClass = 'border-t-2 border-slate-300';
+                else if (dispProd !== '') borderClass = 'border-t border-slate-200';
+                else borderClass = 'border-t border-gray-100';
+
+                let etaText = '';
+                if (p.shipped > 0 && p.etas.length > 0) {
+                    let dates = [];
+                    let hasOnsite = false, hasInter = false, hasOffline = false;
+                    p.etas.forEach(e => {
+                        let lower = e.toLowerCase();
+                        if(lower === 'onsite') hasOnsite = true;
+                        else if(lower === 'interchange') hasInter = true;
+                        else if(lower === 'offline') hasOffline = true;
+                        else if(e.includes('/')) dates.push(e);
+                    });
+                    if(dates.length > 0) {
+                        dates.sort();
+                        etaText = dates[0];
+                    } else if(hasOnsite) etaText = 'Onsite';
+                    else if(hasInter) etaText = 'Interchange';
+                    else if(hasOffline) etaText = 'Offline';
+                }
+
+                const tdClass = "px-3 py-2.5 align-middle text-sm text-gray-800 text-left";
+                const tdNumClass = "px-3 py-2.5 align-middle text-sm text-gray-800 text-center font-medium";
+                
+                let etaStyle = '';
+                if(etaText === 'Onsite') etaStyle = 'text-emerald-600 font-semibold';
+                else if(etaText === 'Interchange') etaStyle = 'text-purple-600 font-semibold';
+                else if(etaText === 'Offline') etaStyle = 'text-orange-600 font-semibold';
+                else if(etaText) etaStyle = 'text-blue-600 font-semibold';
+
+                html += `<tr class="${borderClass} hover:bg-slate-50 transition-colors">
+                    <td class="${tdClass} font-semibold">${dispLoc}</td>
+                    <td class="${tdClass}">${dispProd}</td>
+                    <td class="${tdClass} whitespace-nowrap text-gray-700 font-medium">${p.po}</td>
+                    <td class="${tdClass}">${p.vendor}</td>
+                    <td class="${tdNumClass} text-gray-500 text-left">${p.month}</td>
+                    <td class="${tdNumClass} text-slate-800">${p.total}</td>
+                    <td class="${tdNumClass} text-emerald-600">${p.received > 0 ? p.received : '-'}</td>
+                    <td class="${tdNumClass} text-blue-600">${p.shipped > 0 ? p.shipped : '-'}</td>
+                    <td class="${tdClass} ${etaStyle}">${etaText}</td>
+                </tr>`;
+            });
+
+            if(activePOs.length === 0) {
+                html = `<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500 italic text-sm">No active purchase orders found.</td></tr>`;
+            }
+
+            tbody.innerHTML = html;
         }
 
         // Register Service Worker
