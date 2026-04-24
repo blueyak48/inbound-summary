@@ -53,12 +53,6 @@
         /* Setup layout styles */
         #setup-view { display: flex; flex-direction: column; gap: 1rem; max-width: 800px; margin: 0 auto; padding: 2rem; }
         #preview-view { display: none; flex-direction: column; align-items: center; padding: 2rem; }
-
-        .vertical-text {
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
-            white-space: nowrap;
-        }
     </style>
 </head>
 <body class="min-h-screen text-slate-800">
@@ -81,22 +75,23 @@
     </div>
 
     <!-- PREVIEW VIEW -->
-    <div id="preview-view" class="w-full">
-        <div class="flex justify-between w-full max-w-5xl mb-4 gap-4">
-            <button id="back-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition">
-                &larr; Back
-            </button>
-            <div class="flex gap-2">
-                <button id="download-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition shadow-sm flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                    Download Image
+    <div id="preview-view" class="w-full pb-12">
+        <div class="w-max max-w-full mx-auto flex flex-col">
+            <div class="flex justify-between w-full mb-4 gap-4 px-1">
+                <button id="back-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition">
+                    &larr; Back
                 </button>
+                <div class="flex gap-2">
+                    <button id="download-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition shadow-sm flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        Download Image
+                    </button>
+                </div>
             </div>
-        </div>
 
-        <!-- THE TABLE -->
-        <div id="capture-area" class="bg-white sm:rounded-xl sm:shadow-lg border-y sm:border border-gray-200 overflow-hidden w-full max-w-5xl">
-            <div class="bg-slate-800 px-3 sm:px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+            <!-- THE TABLE -->
+            <div id="capture-area" class="bg-white sm:rounded-xl sm:shadow-lg border sm:border border-gray-200 overflow-hidden w-full">
+                <div class="bg-slate-800 px-3 sm:px-4 py-3 border-b border-slate-700 flex justify-between items-center">
                 <div>
                     <h2 class="text-base sm:text-lg font-semibold text-white tracking-wide uppercase flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -120,6 +115,7 @@
                     </tbody>
                 </table>
             </div>
+        </div>
         </div>
     </div>
 
@@ -268,13 +264,15 @@
             thead.innerHTML = `<th class="px-2 py-3 align-bottom leading-tight min-w-[100px]">Delivery Location</th><th class="px-2 py-3 align-bottom leading-tight min-w-[60px]">Product</th>`;
             
             outputCols.forEach(c => {
-                let thClass = 'px-1 py-2 align-bottom vertical-text w-6 text-center';
+                let thClass = 'px-0 align-middle w-7';
+                let innerContent = `<div class="h-20 flex items-center justify-center w-full"><div class="-rotate-90 whitespace-nowrap text-[10px] tracking-wider">${c.label}</div></div>`;
+                
                 if(c.label === highlightLabel) {
-                    thead.innerHTML += `<th class="${thClass} bg-blue-50 text-blue-700">${c.label}</th>`;
+                    thead.innerHTML += `<th class="${thClass} bg-blue-50 text-blue-700">${innerContent}</th>`;
                 } else if(c.label === 'Offline') {
-                    thead.innerHTML += `<th class="${thClass} text-orange-600">${c.label}</th>`;
+                    thead.innerHTML += `<th class="${thClass} text-orange-600">${innerContent}</th>`;
                 } else {
-                    thead.innerHTML += `<th class="${thClass}">${c.label}</th>`;
+                    thead.innerHTML += `<th class="${thClass}">${innerContent}</th>`;
                 }
             });
             thead.innerHTML += `<th class="px-2 py-3 align-bottom leading-tight bg-slate-100 text-slate-800 min-w-[60px]">Grand Total</th>`;
