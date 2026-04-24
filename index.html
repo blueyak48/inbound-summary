@@ -265,7 +265,7 @@
             
             outputCols.forEach(c => {
                 let thClass = 'px-0 align-middle w-7';
-                let innerContent = `<div class="h-20 flex items-center justify-center w-full"><div class="-rotate-90 whitespace-nowrap text-[10px] tracking-wider">${c.label}</div></div>`;
+                let innerContent = `<div class="h-24 flex items-center justify-center w-full"><div class="-rotate-90 whitespace-nowrap text-[10px] tracking-wider">${c.label}</div></div>`;
                 
                 if(c.label === highlightLabel) {
                     thead.innerHTML += `<th class="${thClass} bg-blue-50 text-blue-700">${innerContent}</th>`;
@@ -275,7 +275,10 @@
                     thead.innerHTML += `<th class="${thClass}">${innerContent}</th>`;
                 }
             });
-            thead.innerHTML += `<th class="px-2 py-3 align-bottom leading-tight bg-slate-100 text-slate-800 min-w-[60px]">Grand Total</th>`;
+            
+            let gtThClass = 'px-0 align-middle w-7';
+            let gtInnerContent = `<div class="h-24 flex items-center justify-center w-full"><div class="-rotate-90 whitespace-nowrap text-[10px] tracking-wider">Grand Total</div></div>`;
+            thead.innerHTML += `<th class="${gtThClass} bg-slate-100 text-slate-800">${gtInnerContent}</th>`;
 
             // Build Body
             const tbody = document.getElementById('table-body');
@@ -365,11 +368,11 @@
                 const gtVal = gtIdx !== undefined && row[gtIdx] ? row[gtIdx].trim() : '-';
                 
                 if(isGrandTotal) {
-                    html += `<td class="px-2 bg-slate-900 rounded-br-lg border-l border-slate-700 ${tdPad} text-right">${gtVal}</td>`;
+                    html += `<td class="px-1 bg-slate-900 rounded-br-lg border-l border-slate-700 ${tdPad} text-center">${gtVal}</td>`;
                 } else if(isSubtotal) {
-                    html += `<td class="px-2 bg-slate-200 ${tdPad} text-right">${gtVal}</td>`;
+                    html += `<td class="px-1 bg-slate-200 ${tdPad} text-center">${gtVal}</td>`;
                 } else {
-                    html += `<td class="px-2 bg-slate-50 font-medium ${tdPad} text-right">${gtVal}</td>`;
+                    html += `<td class="px-1 bg-slate-50 font-medium ${tdPad} text-center">${gtVal}</td>`;
                 }
 
                 html += `</tr>`;
