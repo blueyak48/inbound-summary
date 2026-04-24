@@ -109,7 +109,7 @@
             </div>
 
             <div class="matrix-container overflow-x-auto">
-                <table class="matrix-table w-full text-[10px] sm:text-xs text-gray-700" id="result-table">
+                <table class="matrix-table text-[10px] sm:text-xs text-gray-700 mx-auto" id="result-table">
                     <thead>
                         <tr id="table-head-row" class="text-slate-600 border-b border-gray-200 uppercase tracking-wider font-semibold">
                             <!-- Populated by JS -->
@@ -265,10 +265,10 @@
             // Build Header
             const thead = document.getElementById('table-head-row');
             thead.className = "text-slate-600 border-b border-gray-200 uppercase tracking-wider font-semibold";
-            thead.innerHTML = `<th class="px-2 py-3 align-bottom w-[120px] leading-tight">Delivery Location</th><th class="px-2 py-3 align-bottom w-[100px] leading-tight">Product</th>`;
+            thead.innerHTML = `<th class="px-2 py-3 align-bottom leading-tight min-w-[100px]">Delivery Location</th><th class="px-2 py-3 align-bottom leading-tight min-w-[60px]">Product</th>`;
             
             outputCols.forEach(c => {
-                let thClass = 'px-1 py-2 align-bottom vertical-text w-7 text-center';
+                let thClass = 'px-1 py-2 align-bottom vertical-text w-6 text-center';
                 if(c.label === highlightLabel) {
                     thead.innerHTML += `<th class="${thClass} bg-blue-50 text-blue-700">${c.label}</th>`;
                 } else if(c.label === 'Offline') {
@@ -277,7 +277,7 @@
                     thead.innerHTML += `<th class="${thClass}">${c.label}</th>`;
                 }
             });
-            thead.innerHTML += `<th class="px-2 py-3 align-bottom w-[80px] leading-tight bg-slate-100 text-slate-800">Grand Total</th>`;
+            thead.innerHTML += `<th class="px-2 py-3 align-bottom leading-tight bg-slate-100 text-slate-800 min-w-[60px]">Grand Total</th>`;
 
             // Build Body
             const tbody = document.getElementById('table-body');
