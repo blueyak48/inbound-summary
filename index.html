@@ -265,7 +265,7 @@
             
             outputCols.forEach(c => {
                 let thClass = 'px-0 align-middle w-7';
-                let innerContent = `<div class="h-24 flex items-center justify-center w-full"><div class="-rotate-90 whitespace-nowrap text-[10px] tracking-wider">${c.label}</div></div>`;
+                let innerContent = `<div class="h-20 relative w-full"><div class="absolute inset-0 flex items-center justify-center"><div class="-rotate-90 whitespace-nowrap text-[10px] tracking-wider">${c.label}</div></div></div>`;
                 
                 if(c.label === highlightLabel) {
                     thead.innerHTML += `<th class="${thClass} bg-blue-50 text-blue-700">${innerContent}</th>`;
@@ -277,7 +277,7 @@
             });
             
             let gtThClass = 'px-0 align-middle w-7';
-            let gtInnerContent = `<div class="h-24 flex items-center justify-center w-full"><div class="-rotate-90 whitespace-nowrap text-[10px] tracking-wider">Grand Total</div></div>`;
+            let gtInnerContent = `<div class="h-20 relative w-full"><div class="absolute inset-0 flex items-center justify-center"><div class="-rotate-90 text-[10px] tracking-wider leading-tight text-center">Grand<br>Total</div></div></div>`;
             thead.innerHTML += `<th class="${gtThClass} bg-slate-100 text-slate-800">${gtInnerContent}</th>`;
 
             // Build Body
