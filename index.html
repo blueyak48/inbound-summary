@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rail Inbound Summary</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+        }
+        .matrix-container {
+            -webkit-overflow-scrolling: touch;
+        }
+        .matrix-table th, .matrix-table td {
+            text-align: right;
+            vertical-align: middle;
+        }
+        .matrix-table th:first-child, .matrix-table td:first-child {
+            text-align: left;
+            position: sticky;
+            left: 0;
+            z-index: 20;
+            background-color: inherit;
+        }
+        .matrix-table thead tr { background-color: #f8fafc; }
+        .matrix-table tbody tr { background-color: #ffffff; transition: background-color 0.15s; }
+        .matrix-table tbody tr:hover { background-color: #f9fafb; }
+        .matrix-table tbody tr.bg-gray-100 { background-color: #f3f4f6; }
+        .matrix-table tbody tr.bg-slate-800 { background-color: #1e293b; }
+        .matrix-table tbody tr.bg-slate-800:hover { background-color: #1e293b; }
+        .matrix-table th:first-child::after, .matrix-table td:first-child::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -4px;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(to right, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 100%);
+            pointer-events: none;
+        }
+        .matrix-table th:nth-child(2) {
+            text-align: left;
+        }
+        .matrix-table td:not([colspan]) + td:nth-child(2) {
+            text-align: left;
+        }
+
+        /* Setup layout styles */
+        #setup-view { display: flex; flex-direction: column; gap: 1rem; max-width: 800px; margin: 0 auto; padding: 2rem; }
+        #preview-view { display: none; flex-direction: column; align-items: center; padding: 2rem; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800">
+
+    <!-- SETUP VIEW -->
+    <div id="setup-view">
+        <h1 class="text-2xl font-bold text-slate-900">Generate Rail Summary</h1>
+        <p class="text-slate-600">Fetch the latest pivot table from Google Sheets to generate the summary.</p>
+        
+        <div class="flex gap-4 items-center">
+            <label class="font-semibold">Report Date (for highlighting):</label>
+            <input type="date" id="report-date" class="border border-gray-300 rounded px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <button id="fetch-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition shadow-sm self-start flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+            Fetch Data & Generate Preview
+        </button>
+        <div id="loading" class="text-blue-600 font-medium hidden">Fetching data from Google Sheets...</div>
+    </div>
+
+    <!-- PREVIEW VIEW -->
+    <div id="preview-view" class="w-full">
+        <div class="flex justify-between w-full max-w-5xl mb-4 gap-4">
+            <button id="back-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition">
+                &larr; Back
+            </button>
+            <div class="flex gap-2">
+                <button id="download-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition shadow-sm flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    Download Image
+                </button>
+            </div>
+        </div>
+
+        <!-- THE TABLE -->
+        <div id="capture-area" class="bg-white sm:rounded-xl sm:shadow-lg border-y sm:border border-gray-200 overflow-hidden w-full max-w-5xl">
+            <div class="bg-slate-800 px-3 sm:px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+                <div>
+                    <h2 class="text-base sm:text-lg font-semibold text-white tracking-wide uppercase flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                        Rail Inbound Summary
+                    </h2>
+                    <p id="report-subtitle" class="text-slate-300 text-[10px] sm:text-xs mt-1">Summary of Inbound Car Counts - [Date]</p>
+                </div>
+            </div>
+
+            <div class="matrix-container overflow-x-auto">
+                <table class="matrix-table w-full whitespace-nowrap text-[10px] sm:text-xs text-gray-700" id="result-table">
+                    <thead>
+                        <tr id="table-head-row" class="text-slate-600 border-b border-gray-200 uppercase tracking-wider font-semibold">
+                            <!-- Populated by JS -->
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-gray-100">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set default date
+        document.getElementById('report-date').valueAsDate = new Date();
+
+        const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkTbgVZmqUfy2tr9WS7lIkFjFPe2_6ws1YeuZdvB5syDdbCQCRkGwCoOVM-lcjVNEUo-scS4QajqJV/pub?gid=987654321&single=true&output=tsv";
+        // Google Sheets doesn't send CORS headers, so we route through a proxy
+        const PROXY_URL = "https://api.allorigins.win/raw?url=" + encodeURIComponent(SHEET_URL);
+
+        document.getElementById('fetch-btn').addEventListener('click', async () => {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('fetch-btn').disabled = true;
+            
+            try {
+                const response = await fetch(PROXY_URL);
+                if (!response.ok) {
+                    // Try fallback proxy if allorigins fails
+                    const fbResponse = await fetch("https://corsproxy.io/?" + encodeURIComponent(SHEET_URL));
+                    if (!fbResponse.ok) throw new Error('Failed to fetch data from proxy');
+                    const tsv = await fbResponse.text();
+                    generateTable(tsv);
+                } else {
+                    const tsv = await response.text();
+                    generateTable(tsv);
+                }
+                
+                
+                // Format subtitle date
+                const dateVal = document.getElementById('report-date').value;
+                const dateObj = new Date(dateVal + 'T00:00:00'); // avoid timezone offset
+                const options = { month: 'long', day: 'numeric', year: 'numeric' };
+                document.getElementById('report-subtitle').innerText = `Summary of Inbound Car Counts - ${dateObj.toLocaleDateString('en-US', options)}`;
+                
+                document.getElementById('setup-view').style.display = 'none';
+                document.getElementById('preview-view').style.display = 'flex';
+            } catch (err) {
+                alert('Error fetching data: ' + err.message);
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('fetch-btn').disabled = false;
+            }
+        });
+
+        document.getElementById('back-btn').addEventListener('click', () => {
+            document.getElementById('preview-view').style.display = 'none';
+            document.getElementById('setup-view').style.display = 'flex';
+        });
+
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const element = document.getElementById('capture-area');
+            html2canvas(element, { scale: 2, backgroundColor: null }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Rail_Summary_${document.getElementById('report-date').value}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        });
+
+        function generateTable(tsv) {
+            const lines = tsv.split('\n').map(l => l.split('\t'));
+            
+            // Find header row
+            let headerIdx = -1;
+            for(let i=0; i<lines.length; i++) {
+                if(lines[i][0] && lines[i][0].trim() === 'Delivery Location') {
+                    headerIdx = i;
+                    break;
+                }
+            }
+            if(headerIdx === -1) { alert('Could not find header row starting with "Delivery Location"'); return; }
+
+            const headers = lines[headerIdx].map(h => h.trim());
+            
+            // Map columns
+            const colMap = {};
+            let dateCols = [];
+            
+            for(let i=2; i<headers.length; i++) {
+                const h = headers[i].toLowerCase();
+                if(h === 'onsite') colMap['Onsite'] = i;
+                else if(h === 'cp') colMap['CP'] = i;
+                else if(h === 'interchange' || h === 'inter') colMap['Inter'] = i;
+                else if(h === 'offline') colMap['Offline'] = i;
+                else if(h === 'grand total') colMap['Grand Total'] = i;
+                else if(h && !h.includes('total')) {
+                    dateCols.push({ name: headers[i], idx: i });
+                }
+            }
+
+            // Sort dates
+            dateCols.sort((a, b) => {
+                const da = new Date(a.name + '/2026'); // append dummy year for sorting if needed
+                const db = new Date(b.name + '/2026');
+                return da - db;
+            });
+
+            // Target column order: Onsite, CP, Inter, [Dates], Offline
+            let outputCols = [];
+            outputCols.push({ label: 'Onsite', key: 'Onsite' });
+            outputCols.push({ label: 'CP', key: 'CP' });
+            outputCols.push({ label: 'Inter', key: 'Inter' });
+            dateCols.forEach(d => outputCols.push({ label: d.name, key: 'Date', idx: d.idx }));
+            outputCols.push({ label: 'Offline', key: 'Offline' });
+
+            // Filter columns to only include populated ones
+            outputCols = outputCols.filter(c => {
+                let colIdx = c.key === 'Date' ? c.idx : colMap[c.key];
+                if (colIdx === undefined) return false; // Column completely missing
+                
+                // Check if any row has a > 0 value in this column
+                for(let i = headerIdx + 1; i < lines.length; i++) {
+                    const row = lines[i];
+                    if(!row || row.length === 0 || row[0] === undefined) continue;
+                    if(row.every(c => !c.trim())) continue; // skip completely empty
+                    
+                    const val = row[colIdx];
+                    if(val && val.trim() !== '') {
+                        const num = parseInt(val.trim().replace(/,/g, ''), 10);
+                        if (!isNaN(num) && num > 0) return true;
+                    }
+                }
+                return false;
+            });
+
+            // Determine Highlight Date (e.g. "04/23")
+            const repDate = new Date(document.getElementById('report-date').value + 'T00:00:00');
+            const mo = String(repDate.getMonth() + 1).padStart(2, '0');
+            const da = String(repDate.getDate()).padStart(2, '0');
+            const highlightLabel = `${mo}/${da}`;
+
+            // Build Header
+            const thead = document.getElementById('table-head-row');
+            thead.className = "text-slate-600 border-b border-gray-200 uppercase tracking-wider font-semibold";
+            thead.innerHTML = `<th class="px-2 h-10 leading-[40px]">Delivery Location</th><th class="px-2 h-10 leading-[40px]">Product</th>`;
+            
+            outputCols.forEach(c => {
+                if(c.label === highlightLabel) {
+                    thead.innerHTML += `<th class="px-1.5 h-10 leading-[40px] bg-blue-50 text-blue-700">${c.label}</th>`;
+                } else if(c.label === 'Offline') {
+                    thead.innerHTML += `<th class="px-1.5 h-10 leading-[40px] text-orange-600">${c.label}</th>`;
+                } else {
+                    thead.innerHTML += `<th class="px-1.5 h-10 leading-[40px]">${c.label}</th>`;
+                }
+            });
+            thead.innerHTML += `<th class="px-2 h-10 leading-[40px] bg-slate-100 text-slate-800">Grand Total</th>`;
+
+            // Build Body
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            for(let i = headerIdx + 1; i < lines.length; i++) {
+                const row = lines[i];
+                if(!row || row.length === 0 || row[0] === undefined) continue;
+                
+                const loc = row[0].trim();
+                const prod = (row[1] || '').trim();
+                
+                if(!loc && !prod && row.every(c => !c.trim())) continue; // empty row
+
+                const isSubtotal = loc.endsWith('Total') && loc !== 'Grand Total';
+                const isGrandTotal = loc === 'Grand Total';
+
+                let trClass = 'transition-colors';
+                let tdHeight = 'h-7 leading-[28px]';
+                if(isSubtotal) {
+                    trClass = 'bg-gray-100 font-semibold text-gray-900 border-b-2 border-gray-200';
+                    tdHeight = 'h-8 leading-[32px]';
+                } else if(isGrandTotal) {
+                    trClass = 'bg-slate-800 text-white font-bold text-[11px] sm:text-xs';
+                    tdHeight = 'h-10 leading-[40px]'; // Increased slightly for GT
+                } else if(!loc && prod) {
+                    trClass = 'transition-colors border-t-0';
+                }
+
+                let html = `<tr class="${trClass}">`;
+
+                // Columns 1 & 2
+                if(isGrandTotal) {
+                    html += `<td colspan="2" class="px-2 rounded-bl-lg ${tdHeight}">Grand Total</td>`;
+                } else if(isSubtotal) {
+                    html += `<td colspan="2" class="px-2 ${tdHeight}">${loc}</td>`;
+                } else {
+                    if(loc) {
+                        html += `<td class="px-2 text-gray-900 ${tdHeight}">${loc}</td>`;
+                    } else {
+                        html += `<td class="px-2 ${tdHeight}"></td>`;
+                    }
+                    html += `<td class="px-2 ${tdHeight}">${prod}</td>`;
+                }
+
+                // Data Columns
+                outputCols.forEach(c => {
+                    let val = '';
+                    if(c.key === 'CP') {
+                        val = colMap['CP'] !== undefined ? (row[colMap['CP']] || '') : '';
+                    } else if(c.key === 'Date') {
+                        val = row[c.idx] || '';
+                    } else {
+                        val = colMap[c.key] !== undefined ? (row[colMap[c.key]] || '') : '';
+                    }
+                    val = val.trim();
+                    const dispVal = val === '' ? '-' : val;
+                    
+                    let tdClass = `px-1.5 ${tdHeight}`;
+                    
+                    // Value styling based on state/value
+                    if(dispVal === '-') tdClass += isGrandTotal ? '' : ' text-gray-400';
+                    else if(c.key === 'Onsite' && isGrandTotal) tdClass += ' text-emerald-400';
+                    else if(c.key === 'Onsite' && !isSubtotal && !isGrandTotal && val !== '') tdClass += ' font-medium';
+                    else if(c.key === 'Inter' && isGrandTotal) tdClass += ' text-purple-300';
+                    else if(c.key === 'Inter' && !isSubtotal && !isGrandTotal && val !== '') tdClass += ' font-medium text-purple-600';
+                    else if(c.key === 'Inter' && isSubtotal && val !== '') tdClass += ' text-purple-700';
+                    else if(c.label === 'Offline') {
+                        if(isGrandTotal) tdClass += ' text-orange-400';
+                        else if(isSubtotal) tdClass += ' text-orange-700';
+                        else tdClass += ' font-medium text-orange-600';
+                    }
+
+                    // Highlight Column Styling
+                    if(c.label === highlightLabel) {
+                        if(isGrandTotal) tdClass += ' bg-slate-700 text-blue-300';
+                        else if(isSubtotal) tdClass += ' font-bold bg-blue-100 text-blue-800';
+                        else tdClass += ' font-semibold bg-blue-50 text-blue-700';
+                    }
+
+                    html += `<td class="${tdClass}">${dispVal}</td>`;
+                });
+
+                // Grand Total Column
+                const gtIdx = colMap['Grand Total'];
+                const gtVal = gtIdx !== undefined && row[gtIdx] ? row[gtIdx].trim() : '-';
+                
+                if(isGrandTotal) {
+                    html += `<td class="px-2 bg-slate-900 rounded-br-lg border-l border-slate-700 ${tdHeight}">${gtVal}</td>`;
+                } else if(isSubtotal) {
+                    html += `<td class="px-2 bg-slate-200 ${tdHeight}">${gtVal}</td>`;
+                } else {
+                    html += `<td class="px-2 bg-slate-50 font-medium ${tdHeight}">${gtVal}</td>`;
+                }
+
+                html += `</tr>`;
+                tbody.innerHTML += html;
+                
+                if(isGrandTotal) break; // End of table
+            }
+        }
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js');
+            });
+        }
+    </script>
+</body>
+</html>
