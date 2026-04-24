@@ -53,6 +53,12 @@
         /* Setup layout styles */
         #setup-view { display: flex; flex-direction: column; gap: 1rem; max-width: 800px; margin: 0 auto; padding: 2rem; }
         #preview-view { display: none; flex-direction: column; align-items: center; padding: 2rem; }
+
+        .vertical-text {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body class="min-h-screen text-slate-800">
@@ -103,7 +109,7 @@
             </div>
 
             <div class="matrix-container overflow-x-auto">
-                <table class="matrix-table w-full whitespace-nowrap text-[10px] sm:text-xs text-gray-700" id="result-table">
+                <table class="matrix-table w-full text-[10px] sm:text-xs text-gray-700" id="result-table">
                     <thead>
                         <tr id="table-head-row" class="text-slate-600 border-b border-gray-200 uppercase tracking-wider font-semibold">
                             <!-- Populated by JS -->
@@ -259,18 +265,19 @@
             // Build Header
             const thead = document.getElementById('table-head-row');
             thead.className = "text-slate-600 border-b border-gray-200 uppercase tracking-wider font-semibold";
-            thead.innerHTML = `<th class="px-2 h-10 leading-[40px]">Delivery Location</th><th class="px-2 h-10 leading-[40px]">Product</th>`;
+            thead.innerHTML = `<th class="px-2 py-3 align-bottom w-[120px] leading-tight">Delivery Location</th><th class="px-2 py-3 align-bottom w-[100px] leading-tight">Product</th>`;
             
             outputCols.forEach(c => {
+                let thClass = 'px-1 py-2 align-bottom vertical-text w-7 text-center';
                 if(c.label === highlightLabel) {
-                    thead.innerHTML += `<th class="px-1.5 h-10 leading-[40px] bg-blue-50 text-blue-700">${c.label}</th>`;
+                    thead.innerHTML += `<th class="${thClass} bg-blue-50 text-blue-700">${c.label}</th>`;
                 } else if(c.label === 'Offline') {
-                    thead.innerHTML += `<th class="px-1.5 h-10 leading-[40px] text-orange-600">${c.label}</th>`;
+                    thead.innerHTML += `<th class="${thClass} text-orange-600">${c.label}</th>`;
                 } else {
-                    thead.innerHTML += `<th class="px-1.5 h-10 leading-[40px]">${c.label}</th>`;
+                    thead.innerHTML += `<th class="${thClass}">${c.label}</th>`;
                 }
             });
-            thead.innerHTML += `<th class="px-2 h-10 leading-[40px] bg-slate-100 text-slate-800">Grand Total</th>`;
+            thead.innerHTML += `<th class="px-2 py-3 align-bottom w-[80px] leading-tight bg-slate-100 text-slate-800">Grand Total</th>`;
 
             // Build Body
             const tbody = document.getElementById('table-body');
@@ -289,13 +296,13 @@
                 const isGrandTotal = loc === 'Grand Total';
 
                 let trClass = 'transition-colors';
-                let tdHeight = 'h-7 leading-[28px]';
+                let tdPad = 'py-1.5';
                 if(isSubtotal) {
                     trClass = 'bg-gray-100 font-semibold text-gray-900 border-b-2 border-gray-200';
-                    tdHeight = 'h-8 leading-[32px]';
+                    tdPad = 'py-2';
                 } else if(isGrandTotal) {
                     trClass = 'bg-slate-800 text-white font-bold text-[11px] sm:text-xs';
-                    tdHeight = 'h-10 leading-[40px]'; // Increased slightly for GT
+                    tdPad = 'py-2.5';
                 } else if(!loc && prod) {
                     trClass = 'transition-colors border-t-0';
                 }
@@ -304,16 +311,16 @@
 
                 // Columns 1 & 2
                 if(isGrandTotal) {
-                    html += `<td colspan="2" class="px-2 rounded-bl-lg ${tdHeight}">Grand Total</td>`;
+                    html += `<td colspan="2" class="px-2 rounded-bl-lg ${tdPad} leading-snug">Grand Total</td>`;
                 } else if(isSubtotal) {
-                    html += `<td colspan="2" class="px-2 ${tdHeight}">${loc}</td>`;
+                    html += `<td colspan="2" class="px-2 ${tdPad} leading-snug">${loc}</td>`;
                 } else {
                     if(loc) {
-                        html += `<td class="px-2 text-gray-900 ${tdHeight}">${loc}</td>`;
+                        html += `<td class="px-2 text-gray-900 ${tdPad} leading-snug">${loc}</td>`;
                     } else {
-                        html += `<td class="px-2 ${tdHeight}"></td>`;
+                        html += `<td class="px-2 ${tdPad} leading-snug"></td>`;
                     }
-                    html += `<td class="px-2 ${tdHeight}">${prod}</td>`;
+                    html += `<td class="px-2 ${tdPad} leading-snug">${prod}</td>`;
                 }
 
                 // Data Columns
@@ -329,7 +336,8 @@
                     val = val.trim();
                     const dispVal = val === '' ? '-' : val;
                     
-                    let tdClass = `px-1.5 ${tdHeight}`;
+                    // Add text-center to data columns so they align nicely under vertical headers
+                    let tdClass = `px-1 ${tdPad} text-center`;
                     
                     // Value styling based on state/value
                     if(dispVal === '-') tdClass += isGrandTotal ? '' : ' text-gray-400';
@@ -359,11 +367,11 @@
                 const gtVal = gtIdx !== undefined && row[gtIdx] ? row[gtIdx].trim() : '-';
                 
                 if(isGrandTotal) {
-                    html += `<td class="px-2 bg-slate-900 rounded-br-lg border-l border-slate-700 ${tdHeight}">${gtVal}</td>`;
+                    html += `<td class="px-2 bg-slate-900 rounded-br-lg border-l border-slate-700 ${tdPad} text-right">${gtVal}</td>`;
                 } else if(isSubtotal) {
-                    html += `<td class="px-2 bg-slate-200 ${tdHeight}">${gtVal}</td>`;
+                    html += `<td class="px-2 bg-slate-200 ${tdPad} text-right">${gtVal}</td>`;
                 } else {
-                    html += `<td class="px-2 bg-slate-50 font-medium ${tdHeight}">${gtVal}</td>`;
+                    html += `<td class="px-2 bg-slate-50 font-medium ${tdPad} text-right">${gtVal}</td>`;
                 }
 
                 html += `</tr>`;
