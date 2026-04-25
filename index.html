@@ -450,6 +450,7 @@
                         total: 0,
                         received: 0,
                         shipped: 0,
+                        remaining: 0,
                         etas: []
                     });
                 }
@@ -462,6 +463,8 @@
                 } else {
                     if(waybill) {
                         pData.shipped++;
+                    } else {
+                        pData.remaining++;
                     }
                     if(eta) {
                         pData.etas.push(eta);
@@ -478,10 +481,10 @@
             });
 
             const thead = document.getElementById('table-head-row');
-            thead.className = "text-slate-600 border-b border-gray-300 uppercase tracking-wider font-semibold bg-slate-100";
+            thead.className = "text-slate-600 border-b-2 border-gray-300 uppercase tracking-wider font-semibold bg-slate-100";
             
-            const thClass = "px-3 py-3 align-bottom leading-tight whitespace-nowrap text-[11px] sm:text-xs !text-left";
-            const thNumClass = "px-3 py-3 align-bottom leading-tight whitespace-nowrap !text-center text-[11px] sm:text-xs";
+            const thClass = "px-3 py-2 align-bottom leading-tight text-[11px] sm:text-xs !text-left";
+            const thNumClass = "px-3 py-2 align-bottom leading-tight !text-center text-[11px] sm:text-xs";
             thead.innerHTML = `
                 <th class="${thClass}">Delivery Location</th>
                 <th class="${thClass}">Product</th>
@@ -491,6 +494,7 @@
                 <th class="${thNumClass}">Total Ordered</th>
                 <th class="${thNumClass}">Received</th>
                 <th class="${thNumClass}">Shipped</th>
+                <th class="${thNumClass}">Remaining</th>
                 <th class="${thClass}">ETA Next Car</th>
             `;
 
@@ -503,6 +507,7 @@
             let subtotalOrdered = 0;
             let subtotalReceived = 0;
             let subtotalShipped = 0;
+            let subtotalRemaining = 0;
 
             let lastLoc = '';
             let lastProd = '';
@@ -519,12 +524,13 @@
                 // If grouping changes, output subtotal if count > 1
                 if ((locChanged || prodChanged) && i > 0) {
                     if (groupCount > 1) {
-                        html += `<tr class="bg-slate-100 font-semibold text-gray-900 border-t-2 border-slate-200">
-                            <td class="${tdClass}" colspan="2"></td>
-                            <td class="${tdClass}" colspan="3">${currentLoc} ${currentProd} Total</td>
-                            <td class="${tdNumClass}">${subtotalOrdered}</td>
-                            <td class="${tdNumClass} text-emerald-600">${subtotalReceived > 0 ? subtotalReceived : '-'}</td>
-                            <td class="${tdNumClass} text-blue-600">${subtotalShipped > 0 ? subtotalShipped : '-'}</td>
+                        html += `<tr class="bg-slate-200 text-slate-900 border-y-2 border-slate-300 shadow-sm">
+                            <td class="${tdClass} !font-bold" colspan="2"></td>
+                            <td class="${tdClass} !font-bold" colspan="3">${currentLoc} ${currentProd} Total</td>
+                            <td class="${tdNumClass} !font-bold">${subtotalOrdered}</td>
+                            <td class="${tdNumClass} !font-bold text-emerald-700">${subtotalReceived > 0 ? subtotalReceived : '-'}</td>
+                            <td class="${tdNumClass} !font-bold text-blue-700">${subtotalShipped > 0 ? subtotalShipped : '-'}</td>
+                            <td class="${tdNumClass} !font-bold text-red-700">${subtotalRemaining > 0 ? subtotalRemaining : '-'}</td>
                             <td class="${tdClass}"></td>
                         </tr>`;
                     }
@@ -536,6 +542,7 @@
                         subtotalOrdered = 0;
                         subtotalReceived = 0;
                         subtotalShipped = 0;
+                        subtotalRemaining = 0;
                     }
                 }
 
@@ -549,6 +556,7 @@
                     subtotalOrdered += p.total;
                     subtotalReceived += p.received;
                     subtotalShipped += p.shipped;
+                    subtotalRemaining += p.remaining;
 
                     let dispLoc = p.loc !== lastLoc ? p.loc : '';
                     let dispProd = (p.loc !== lastLoc || p.prod !== lastProd) ? p.prod : '';
@@ -589,12 +597,13 @@
                     html += `<tr class="${borderClass} hover:bg-slate-50 transition-colors">
                         <td class="${tdClass} font-semibold">${dispLoc}</td>
                         <td class="${tdClass}">${dispProd}</td>
-                        <td class="${tdClass} whitespace-nowrap text-gray-700 font-medium">${p.po}</td>
+                        <td class="${tdClass} text-gray-700 font-medium">${p.po}</td>
                         <td class="${tdClass}">${p.vendor}</td>
                         <td class="${tdNumClass} text-gray-500">${p.month}</td>
                         <td class="${tdNumClass}">${p.total}</td>
                         <td class="${tdNumClass} text-emerald-600">${p.received > 0 ? p.received : '-'}</td>
                         <td class="${tdNumClass} text-blue-600">${p.shipped > 0 ? p.shipped : '-'}</td>
+                        <td class="${tdNumClass} text-red-600">${p.remaining > 0 ? p.remaining : '-'}</td>
                         <td class="${tdClass} ${etaStyle}">${etaText}</td>
                     </tr>`;
                 }
