@@ -526,14 +526,14 @@
                 // If grouping changes, output subtotal if count > 1
                 if ((locChanged || prodChanged) && i > 0) {
                     if (groupCount > 1) {
-                        html += `<tr class="!bg-slate-200 border-y-2 border-slate-300 shadow-sm">
-                            <td class="${tdClass} !font-bold !text-slate-900" colspan="2"></td>
-                            <td class="${tdClass} !font-bold !text-slate-900" colspan="3">${currentLoc} ${currentProd} Total</td>
-                            <td class="${tdNumClass} !font-bold !text-slate-900">${subtotalOrdered}</td>
-                            <td class="${tdNumClass} !font-bold !text-emerald-700">${subtotalReceived > 0 ? subtotalReceived : '-'}</td>
-                            <td class="${tdNumClass} !font-bold !text-blue-700">${subtotalShipped > 0 ? subtotalShipped : '-'}</td>
-                            <td class="${tdNumClass} !font-bold !text-red-700">${subtotalRemaining > 0 ? subtotalRemaining : '-'}</td>
-                            <td class="${tdClass}"></td>
+                        html += `<tr>
+                            <td class="${tdClass} !bg-white" colspan="2"></td>
+                            <td class="${tdClass} !font-bold !text-slate-900 !bg-slate-200 border-y-2 border-slate-300" colspan="3">${currentLoc} ${currentProd} Total</td>
+                            <td class="${tdNumClass} !font-bold !text-slate-900 !bg-slate-200 border-y-2 border-slate-300">${subtotalOrdered}</td>
+                            <td class="${tdNumClass} !font-bold !text-emerald-700 !bg-slate-200 border-y-2 border-slate-300">${subtotalReceived > 0 ? subtotalReceived : '-'}</td>
+                            <td class="${tdNumClass} !font-bold !text-blue-700 !bg-slate-200 border-y-2 border-slate-300">${subtotalShipped > 0 ? subtotalShipped : '-'}</td>
+                            <td class="${tdNumClass} !font-bold !text-red-700 !bg-slate-200 border-y-2 border-slate-300">${subtotalRemaining > 0 ? subtotalRemaining : '-'}</td>
+                            <td class="${tdClass} !bg-slate-200 border-y-2 border-slate-300"></td>
                         </tr>`;
                     }
                     
@@ -567,8 +567,8 @@
                     lastProd = p.prod;
 
                     let borderClass = '';
-                    if (dispLoc !== '' && i > 0) borderClass = 'border-t-2 border-slate-300';
-                    else if (dispProd !== '') borderClass = 'border-t border-slate-200';
+                    if (dispLoc !== '' && i > 0) borderClass = 'border-t-[3px] border-slate-800';
+                    else if (dispProd !== '') borderClass = 'border-t-2 border-slate-200';
                     else borderClass = 'border-t border-gray-100';
 
                     let etaText = '';
