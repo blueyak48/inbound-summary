@@ -49,9 +49,6 @@
         .matrix-table td:not([colspan]) + td:nth-child(2) {
             text-align: left;
         }
-        .heavy-split td {
-            border-top: 4px solid #1e293b !important;
-        }
 
         /* Setup layout styles */
         #setup-view { display: flex; flex-direction: column; gap: 1rem; max-width: 800px; margin: 0 auto; padding: 2rem; }
@@ -506,74 +503,133 @@
             const tbody = document.getElementById('table-body');
             let html = '';
 
+            // 1. Build flat array of all rows to render (POs and Subtotals)
+            let renderRows = [];
             let currentLoc = '';
             let currentProd = '';
-            let groupCount = 0;
-            let subtotalOrdered = 0;
-            let subtotalReceived = 0;
-            let subtotalShipped = 0;
-            let subtotalRemaining = 0;
+            let groupPOs = [];
 
-            let lastLoc = '';
-            let lastProd = '';
+            function pushSubtotal() {
+                if (groupPOs.length > 1) {
+                    let stOrdered = 0, stReceived = 0, stShipped = 0, stRemaining = 0;
+                    groupPOs.forEach(p => {
+                        stOrdered += p.total;
+                        stReceived += p.received;
+                        stShipped += p.shipped;
+                        stRemaining += p.remaining;
+                    });
+                    renderRows.push({
+                        type: 'subtotal',
+                        loc: currentLoc,
+                        prod: currentProd,
+                        ordered: stOrdered,
+                        received: stReceived,
+                        shipped: stShipped,
+                        remaining: stRemaining
+                    });
+                }
+                groupPOs = [];
+            }
 
-            const tdClass = "px-3 py-2.5 align-middle text-sm text-gray-800 !text-left";
-            const tdNumClass = "px-3 py-2.5 align-middle text-sm text-gray-800 !text-center font-medium";
+            activePOs.forEach(p => {
+                if (p.loc !== currentLoc || p.prod !== currentProd) {
+                    if (currentLoc !== '') pushSubtotal();
+                    currentLoc = p.loc;
+                    currentProd = p.prod;
+                }
+                groupPOs.push(p);
+                renderRows.push({
+                    type: 'po',
+                    data: p,
+                    loc: p.loc,
+                    prod: p.prod
+                });
+            });
+            if (currentLoc !== '') pushSubtotal();
 
-            for (let i = 0; i <= activePOs.length; i++) {
-                const p = activePOs[i]; // p is undefined on final iteration
+            // 2. Pre-calculate wire boundaries
+            let lastNamedProdRowForLoc = {}; 
+            let lastRowForProdGroup = {};
+
+            for (let i = 0; i < renderRows.length; i++) {
+                let r = renderRows[i];
+                if (!lastNamedProdRowForLoc[r.loc]) lastNamedProdRowForLoc[r.loc] = {};
+                if (lastNamedProdRowForLoc[r.loc][r.prod] === undefined) {
+                    lastNamedProdRowForLoc[r.loc].lastIndex = i;
+                    lastNamedProdRowForLoc[r.loc][r.prod] = i; 
+                }
+                lastRowForProdGroup[`${r.loc}_${r.prod}`] = i;
+            }
+
+            // 3. Assign wire types
+            for (let i = 0; i < renderRows.length; i++) {
+                let r = renderRows[i];
                 
-                let locChanged = p ? p.loc !== currentLoc : true;
-                let prodChanged = p ? p.prod !== currentProd : true;
-                
-                // If grouping changes, output subtotal if count > 1
-                if ((locChanged || prodChanged) && i > 0) {
-                    if (groupCount > 1) {
-                        html += `<tr>
-                            <td class="${tdClass} !bg-white" colspan="2"></td>
-                            <td class="${tdClass} !font-bold !text-slate-900 !bg-slate-200 border-y-2 border-slate-300" colspan="3">${currentLoc} ${currentProd} Total</td>
-                            <td class="${tdNumClass} !font-bold !text-slate-900 !bg-slate-200 border-y-2 border-slate-300">${subtotalOrdered}</td>
-                            <td class="${tdNumClass} !font-bold !text-emerald-700 !bg-slate-200 border-y-2 border-slate-300">${subtotalReceived > 0 ? subtotalReceived : '-'}</td>
-                            <td class="${tdNumClass} !font-bold !text-blue-700 !bg-slate-200 border-y-2 border-slate-300">${subtotalShipped > 0 ? subtotalShipped : '-'}</td>
-                            <td class="${tdNumClass} !font-bold !text-red-700 !bg-slate-200 border-y-2 border-slate-300">${subtotalRemaining > 0 ? subtotalRemaining : '-'}</td>
-                            <td class="${tdClass} !bg-slate-200 border-y-2 border-slate-300"></td>
-                        </tr>`;
-                    }
-                    
-                    if (p) {
-                        currentLoc = p.loc;
-                        currentProd = p.prod;
-                        groupCount = 0;
-                        subtotalOrdered = 0;
-                        subtotalReceived = 0;
-                        subtotalShipped = 0;
-                        subtotalRemaining = 0;
+                // Location Wire
+                let firstRowOfLoc = i === 0 || renderRows[i-1].loc !== r.loc;
+                if (firstRowOfLoc) {
+                    r.locWire = '';
+                } else {
+                    let lastNamedIdx = lastNamedProdRowForLoc[r.loc].lastIndex;
+                    if (i < lastNamedIdx) {
+                        r.locWire = (lastNamedProdRowForLoc[r.loc][r.prod] === i) ? 'T' : 'I';
+                    } else if (i === lastNamedIdx) {
+                        r.locWire = 'L';
+                    } else {
+                        r.locWire = '';
                     }
                 }
 
-                if (p) {
-                    if (groupCount === 0) {
-                        currentLoc = p.loc;
-                        currentProd = p.prod;
+                // Product Wire
+                let firstRowOfProd = lastNamedProdRowForLoc[r.loc][r.prod] === i;
+                if (firstRowOfProd) {
+                    r.prodWire = '';
+                } else {
+                    let lastRowIdx = lastRowForProdGroup[`${r.loc}_${r.prod}`];
+                    if (i < lastRowIdx) {
+                        r.prodWire = 'T';
+                    } else if (i === lastRowIdx) {
+                        r.prodWire = 'L';
+                    } else {
+                        r.prodWire = '';
                     }
-                    
-                    groupCount++;
-                    subtotalOrdered += p.total;
-                    subtotalReceived += p.received;
-                    subtotalShipped += p.shipped;
-                    subtotalRemaining += p.remaining;
+                }
+            }
 
-                    let dispLoc = p.loc !== lastLoc ? p.loc : '';
-                    let dispProd = (p.loc !== lastLoc || p.prod !== lastProd) ? p.prod : '';
-                    
-                    lastLoc = p.loc;
-                    lastProd = p.prod;
+            // 4. Render HTML
+            const tdClass = "px-3 py-2.5 align-middle text-sm text-gray-800 !text-left";
+            const tdNumClass = "px-3 py-2.5 align-middle text-sm text-gray-800 !text-center font-medium";
+            
+            function renderWire(wireType) {
+                if (wireType === 'I') return `<div class="absolute right-4 top-0 bottom-0 border-l-2 border-slate-300"></div>`;
+                if (wireType === 'T') return `<div class="absolute right-4 top-0 bottom-0 border-l-2 border-slate-300"></div><div class="absolute right-0 top-1/2 w-4 border-t-2 border-slate-300"></div>`;
+                if (wireType === 'L') return `<div class="absolute right-4 top-0 h-1/2 border-l-2 border-slate-300"></div><div class="absolute right-0 top-1/2 w-4 border-t-2 border-slate-300"></div>`;
+                return '';
+            }
 
-                    let borderClass = '';
-                    if (dispLoc !== '' && i > 0) borderClass = 'heavy-split';
-                    else if (dispProd !== '') borderClass = 'border-t-2 border-slate-200';
-                    else borderClass = 'border-t border-gray-100';
+            for (let i = 0; i < renderRows.length; i++) {
+                let r = renderRows[i];
+                let isFirstOfLoc = i === 0 || renderRows[i-1].loc !== r.loc;
+                let isFirstOfProd = isFirstOfLoc || renderRows[i-1].prod !== r.prod;
+                
+                let dispLoc = isFirstOfLoc ? r.loc : '';
+                let dispProd = isFirstOfProd ? r.prod : '';
 
+                let borderClass = i > 0 ? 'border-t border-slate-200' : '';
+
+                if (r.type === 'subtotal') {
+                    html += `<tr class="${borderClass} bg-slate-50/50">
+                        <td class="${tdClass} relative">${renderWire(r.locWire)}</td>
+                        <td class="${tdClass} relative">${renderWire(r.prodWire)}</td>
+                        <td class="${tdClass} !font-bold !text-slate-900" colspan="2">${r.loc} ${r.prod} Total</td>
+                        <td class="${tdNumClass} !font-bold !text-slate-900">${r.ordered}</td>
+                        <td class="${tdNumClass} !font-bold text-emerald-700">${r.received > 0 ? r.received : '-'}</td>
+                        <td class="${tdNumClass} !font-bold text-blue-700">${r.shipped > 0 ? r.shipped : '-'}</td>
+                        <td class="${tdNumClass} !font-bold text-red-700">${r.remaining > 0 ? r.remaining : '-'}</td>
+                        <td class="${tdClass}"></td>
+                    </tr>`;
+                } else {
+                    let p = r.data;
                     let etaText = '';
                     if (p.shipped > 0 && p.etas.length > 0) {
                         let dates = [];
@@ -600,8 +656,8 @@
                     else if(etaText) etaStyle = 'text-blue-600 font-semibold';
 
                     html += `<tr class="${borderClass} hover:bg-slate-50 transition-colors">
-                        <td class="${tdClass} font-semibold">${dispLoc}</td>
-                        <td class="${tdClass}">${dispProd}</td>
+                        <td class="${tdClass} relative font-bold text-slate-900">${dispLoc}${renderWire(r.locWire)}</td>
+                        <td class="${tdClass} relative font-bold text-slate-900">${dispProd}${renderWire(r.prodWire)}</td>
                         <td class="${tdClass} text-gray-700 font-medium">${p.po}</td>
                         <td class="${tdClass}">${p.vendor}</td>
                         <td class="${tdNumClass} text-gray-500">${p.month}</td>
