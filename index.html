@@ -207,10 +207,12 @@
         });
 
         document.getElementById('download-btn').addEventListener('click', () => {
+            const reportType = document.getElementById('report-type').value;
+            const prefix = reportType === 'inbound' ? 'Rail_Inbound_Summary' : 'Rail_Purchase_Order_Summary';
             const element = document.getElementById('capture-area');
             html2canvas(element, { scale: 2, backgroundColor: null }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `Rail_Summary_${document.getElementById('report-date').value}.png`;
+                link.download = `${prefix}_${document.getElementById('report-date').value}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             });
@@ -483,19 +485,19 @@
             const thead = document.getElementById('table-head-row');
             thead.className = "text-slate-600 border-b-2 border-gray-300 uppercase tracking-wider font-semibold bg-slate-100";
             
-            const thClass = "px-3 py-2 align-bottom leading-tight text-[11px] sm:text-xs !text-left";
-            const thNumClass = "px-3 py-2 align-bottom leading-tight !text-center text-[11px] sm:text-xs";
+            const thClass = "px-2 py-3 align-bottom leading-tight text-[11px] sm:text-xs !text-left";
+            const thNumClass = "px-2 py-3 align-bottom leading-tight !text-center text-[11px] sm:text-xs";
             thead.innerHTML = `
-                <th class="${thClass}">Delivery Location</th>
+                <th class="${thClass}">Delivery<br>Location</th>
                 <th class="${thClass}">Product</th>
-                <th class="${thClass}">Purchase Order</th>
+                <th class="${thClass}">Purchase<br>Order</th>
                 <th class="${thClass}">Vendor</th>
-                <th class="${thNumClass}">Contract Month</th>
-                <th class="${thNumClass}">Total Ordered</th>
+                <th class="${thNumClass}">Contract<br>Month</th>
+                <th class="${thNumClass}">Total<br>Ordered</th>
                 <th class="${thNumClass}">Received</th>
                 <th class="${thNumClass}">Shipped</th>
                 <th class="${thNumClass}">Remaining</th>
-                <th class="${thClass}">ETA Next Car</th>
+                <th class="${thClass}">ETA Next<br>Car</th>
             `;
 
             const tbody = document.getElementById('table-body');
@@ -524,13 +526,13 @@
                 // If grouping changes, output subtotal if count > 1
                 if ((locChanged || prodChanged) && i > 0) {
                     if (groupCount > 1) {
-                        html += `<tr class="bg-slate-200 text-slate-900 border-y-2 border-slate-300 shadow-sm">
-                            <td class="${tdClass} !font-bold" colspan="2"></td>
-                            <td class="${tdClass} !font-bold" colspan="3">${currentLoc} ${currentProd} Total</td>
-                            <td class="${tdNumClass} !font-bold">${subtotalOrdered}</td>
-                            <td class="${tdNumClass} !font-bold text-emerald-700">${subtotalReceived > 0 ? subtotalReceived : '-'}</td>
-                            <td class="${tdNumClass} !font-bold text-blue-700">${subtotalShipped > 0 ? subtotalShipped : '-'}</td>
-                            <td class="${tdNumClass} !font-bold text-red-700">${subtotalRemaining > 0 ? subtotalRemaining : '-'}</td>
+                        html += `<tr class="!bg-slate-200 border-y-2 border-slate-300 shadow-sm">
+                            <td class="${tdClass} !font-bold !text-slate-900" colspan="2"></td>
+                            <td class="${tdClass} !font-bold !text-slate-900" colspan="3">${currentLoc} ${currentProd} Total</td>
+                            <td class="${tdNumClass} !font-bold !text-slate-900">${subtotalOrdered}</td>
+                            <td class="${tdNumClass} !font-bold !text-emerald-700">${subtotalReceived > 0 ? subtotalReceived : '-'}</td>
+                            <td class="${tdNumClass} !font-bold !text-blue-700">${subtotalShipped > 0 ? subtotalShipped : '-'}</td>
+                            <td class="${tdNumClass} !font-bold !text-red-700">${subtotalRemaining > 0 ? subtotalRemaining : '-'}</td>
                             <td class="${tdClass}"></td>
                         </tr>`;
                     }
