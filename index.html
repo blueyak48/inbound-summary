@@ -49,6 +49,9 @@
         .matrix-table td:not([colspan]) + td:nth-child(2) {
             text-align: left;
         }
+        .heavy-split td {
+            border-top: 4px solid #1e293b !important;
+        }
 
         /* Setup layout styles */
         #setup-view { display: flex; flex-direction: column; gap: 1rem; max-width: 800px; margin: 0 auto; padding: 2rem; }
@@ -485,7 +488,7 @@
             const thead = document.getElementById('table-head-row');
             thead.className = "text-slate-600 border-b-2 border-gray-300 uppercase tracking-wider font-semibold bg-slate-100";
             
-            const thClass = "px-2 py-3 align-bottom leading-tight text-[11px] sm:text-xs !text-left";
+            const thClass = "px-2 py-3 align-bottom leading-tight text-[11px] sm:text-xs !text-center";
             const thNumClass = "px-2 py-3 align-bottom leading-tight !text-center text-[11px] sm:text-xs";
             thead.innerHTML = `
                 <th class="${thClass}">Delivery<br>Location</th>
@@ -567,7 +570,7 @@
                     lastProd = p.prod;
 
                     let borderClass = '';
-                    if (dispLoc !== '' && i > 0) borderClass = 'border-t-[3px] border-slate-800';
+                    if (dispLoc !== '' && i > 0) borderClass = 'heavy-split';
                     else if (dispProd !== '') borderClass = 'border-t-2 border-slate-200';
                     else borderClass = 'border-t border-gray-100';
 
