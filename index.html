@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,59 +14,102 @@
             font-family: 'Inter', sans-serif;
             background-color: #f9fafb;
         }
+
         .matrix-container {
             -webkit-overflow-scrolling: touch;
         }
-        .matrix-table th, .matrix-table td {
+
+        .matrix-table th,
+        .matrix-table td {
             text-align: right;
             vertical-align: middle;
         }
-        .matrix-table th:first-child, .matrix-table td:first-child {
+
+        .matrix-table th:first-child,
+        .matrix-table td:first-child {
             text-align: left;
             position: sticky;
             left: 0;
             z-index: 20;
             background-color: inherit;
         }
-        .matrix-table thead tr { background-color: #f8fafc; }
-        .matrix-table tbody tr { background-color: #ffffff; transition: background-color 0.15s; }
-        .matrix-table tbody tr:hover { background-color: #f9fafb; }
-        .matrix-table tbody tr.bg-gray-100 { background-color: #f3f4f6; }
-        .matrix-table tbody tr.bg-slate-800 { background-color: #1e293b; }
-        .matrix-table tbody tr.bg-slate-800:hover { background-color: #1e293b; }
-        .matrix-table th:first-child::after, .matrix-table td:first-child::after {
+
+        .matrix-table thead tr {
+            background-color: #f8fafc;
+        }
+
+        .matrix-table tbody tr {
+            background-color: #ffffff;
+            transition: background-color 0.15s;
+        }
+
+        .matrix-table tbody tr:hover {
+            background-color: #f9fafb;
+        }
+
+        .matrix-table tbody tr.bg-gray-100 {
+            background-color: #f3f4f6;
+        }
+
+        .matrix-table tbody tr.bg-slate-800 {
+            background-color: #1e293b;
+        }
+
+        .matrix-table tbody tr.bg-slate-800:hover {
+            background-color: #1e293b;
+        }
+
+        .matrix-table th:first-child::after,
+        .matrix-table td:first-child::after {
             content: '';
             position: absolute;
             top: 0;
             right: -4px;
             bottom: 0;
             width: 4px;
-            background: linear-gradient(to right, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 100%);
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
             pointer-events: none;
         }
+
         .matrix-table th:nth-child(2) {
             text-align: left;
         }
-        .matrix-table td:not([colspan]) + td:nth-child(2) {
+
+        .matrix-table td:not([colspan])+td:nth-child(2) {
             text-align: left;
         }
 
         /* Setup layout styles */
-        #setup-view { display: flex; flex-direction: column; gap: 1rem; max-width: 800px; margin: 0 auto; padding: 2rem; }
-        #preview-view { display: none; flex-direction: column; align-items: center; padding: 2rem; }
+        #setup-view {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        #preview-view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
     </style>
 </head>
+
 <body class="min-h-screen text-slate-800">
 
     <!-- SETUP VIEW -->
     <div id="setup-view">
         <h1 class="text-2xl font-bold text-slate-900">Generate Rail Summary</h1>
         <p class="text-slate-600">Fetch the latest pivot table from Google Sheets to generate the summary.</p>
-        
+
         <div class="flex flex-col gap-4 w-full max-w-md">
             <div class="flex justify-between items-center w-full gap-4">
                 <label class="font-semibold whitespace-nowrap">Report Type:</label>
-                <select id="report-type" class="w-full border border-gray-300 rounded px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                <select id="report-type"
+                    class="w-full border border-gray-300 rounded px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
                     <option value="inbound">Rail Inbound Summary</option>
                     <option value="po">Rail Purchase Order Summary</option>
                 </select>
@@ -73,12 +117,18 @@
 
             <div class="flex justify-between items-center w-full gap-4">
                 <label class="font-semibold whitespace-nowrap">Report Date:</label>
-                <input type="date" id="report-date" class="w-full border border-gray-300 rounded px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="date" id="report-date"
+                    class="w-full border border-gray-300 rounded px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
         </div>
 
-        <button id="fetch-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition shadow-sm self-start flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+        <button id="fetch-btn"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition shadow-sm self-start flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
             Fetch Data & Generate Preview
         </button>
         <div id="loading" class="text-blue-600 font-medium hidden">Fetching data from Google Sheets...</div>
@@ -88,44 +138,56 @@
     <div id="preview-view" class="w-full pb-12">
         <div class="w-max max-w-full mx-auto flex flex-col">
             <div class="flex justify-between w-full mb-4 gap-4 px-1">
-                <button id="back-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition">
+                <button id="back-btn"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition">
                     &larr; Back
                 </button>
                 <div class="flex gap-2">
-                    <button id="download-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition shadow-sm flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    <button id="download-btn"
+                        class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition shadow-sm flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
                         Download Image
                     </button>
                 </div>
             </div>
 
             <!-- THE TABLE -->
-            <div id="capture-area" class="bg-white sm:rounded-xl sm:shadow-lg border sm:border border-gray-200 overflow-hidden w-full">
+            <div id="capture-area"
+                class="bg-white sm:rounded-xl sm:shadow-lg border sm:border border-gray-200 overflow-hidden w-full">
                 <div class="bg-slate-800 px-3 sm:px-4 py-3 border-b border-slate-700 flex justify-between items-center">
-                <div>
-                    <h2 class="text-base sm:text-lg font-semibold text-white tracking-wide uppercase flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                        </svg>
-                        Rail Inbound Summary
-                    </h2>
-                    <p id="report-subtitle" class="text-slate-300 text-[10px] sm:text-xs mt-1">Summary of Inbound Car Counts - [Date]</p>
+                    <div>
+                        <h2
+                            class="text-base sm:text-lg font-semibold text-white tracking-wide uppercase flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-blue-400"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                            Rail Inbound Summary
+                        </h2>
+                        <p id="report-subtitle" class="text-slate-300 text-[10px] sm:text-xs mt-1">Summary of Inbound
+                            Car Counts - [Date]</p>
+                    </div>
+                </div>
+
+                <div class="matrix-container overflow-x-auto">
+                    <table class="matrix-table text-[10px] sm:text-xs text-gray-700 mx-auto" id="result-table">
+                        <thead>
+                            <tr id="table-head-row"
+                                class="text-slate-600 border-b border-gray-200 uppercase tracking-wider font-semibold">
+                                <!-- Populated by JS -->
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="divide-y divide-gray-100">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
-
-            <div class="matrix-container overflow-x-auto">
-                <table class="matrix-table text-[10px] sm:text-xs text-gray-700 mx-auto" id="result-table">
-                    <thead>
-                        <tr id="table-head-row" class="text-slate-600 border-b border-gray-200 uppercase tracking-wider font-semibold">
-                            <!-- Populated by JS -->
-                        </tr>
-                    </thead>
-                    <tbody id="table-body" class="divide-y divide-gray-100">
-                        <!-- Populated by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
         </div>
     </div>
 
@@ -135,7 +197,7 @@
 
         const INBOUND_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkTbgVZmqUfy2tr9WS7lIkFjFPe2_6ws1YeuZdvB5syDdbCQCRkGwCoOVM-lcjVNEUo-scS4QajqJV/pub?gid=987654321&single=true&output=tsv";
         const PO_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkTbgVZmqUfy2tr9WS7lIkFjFPe2_6ws1YeuZdvB5syDdbCQCRkGwCoOVM-lcjVNEUo-scS4QajqJV/pub?gid=0&single=true&output=tsv";
-        
+
         // Fallback array of CORS proxies to ensure high availability
         const PROXIES = [
             "https://api.codetabs.com/v1/proxy?quest=",
@@ -146,13 +208,13 @@
         document.getElementById('fetch-btn').addEventListener('click', async () => {
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('fetch-btn').disabled = true;
-            
+
             const reportType = document.getElementById('report-type').value;
             const SHEET_URL = reportType === 'inbound' ? INBOUND_URL : PO_URL;
 
             try {
                 let tsv = null;
-                
+
                 for (const proxyBase of PROXIES) {
                     try {
                         const response = await fetch(proxyBase + encodeURIComponent(SHEET_URL));
@@ -163,24 +225,24 @@
                         console.warn(`Proxy ${proxyBase} failed:`, err);
                     }
                 }
-                
+
                 if (!tsv) {
                     throw new Error('All CORS proxies failed. Google Sheets may be blocking the requests, or you may be offline.');
                 }
-                
+
                 if (reportType === 'inbound') {
                     generateTable(tsv);
                 } else {
                     generatePOTable(tsv);
                 }
-                
+
                 // Format subtitle date
                 const dateVal = document.getElementById('report-date').value;
                 const dateObj = new Date(dateVal + 'T00:00:00'); // avoid timezone offset
                 const options = { month: 'long', day: 'numeric', year: 'numeric' };
                 let titleDisplay = document.querySelector('#preview-view h2');
                 let subtitleText = 'Summary of Inbound Car Counts';
-                
+
                 if (reportType === 'inbound') {
                     titleDisplay.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg> RAIL INBOUND SUMMARY`;
                     subtitleText = 'Summary of Inbound Car Counts';
@@ -188,9 +250,9 @@
                     titleDisplay.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg> RAIL PURCHASE ORDER SUMMARY`;
                     subtitleText = 'Summary of Active Purchase Orders';
                 }
-                
+
                 document.getElementById('report-subtitle').innerText = `${subtitleText} - ${dateObj.toLocaleDateString('en-US', options)}`;
-                
+
                 document.getElementById('setup-view').style.display = 'none';
                 document.getElementById('preview-view').style.display = 'flex';
             } catch (err) {
@@ -220,31 +282,31 @@
 
         function generateTable(tsv) {
             const lines = tsv.split('\n').map(l => l.split('\t'));
-            
+
             // Find header row
             let headerIdx = -1;
-            for(let i=0; i<lines.length; i++) {
-                if(lines[i][0] && lines[i][0].trim() === 'Delivery Location') {
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i][0] && lines[i][0].trim() === 'Delivery Location') {
                     headerIdx = i;
                     break;
                 }
             }
-            if(headerIdx === -1) { alert('Could not find header row starting with "Delivery Location"'); return; }
+            if (headerIdx === -1) { alert('Could not find header row starting with "Delivery Location"'); return; }
 
             const headers = lines[headerIdx].map(h => h.trim());
-            
+
             // Map columns
             const colMap = {};
             let dateCols = [];
-            
-            for(let i=2; i<headers.length; i++) {
+
+            for (let i = 2; i < headers.length; i++) {
                 const h = headers[i].toLowerCase();
-                if(h === 'onsite') colMap['Onsite'] = i;
-                else if(h === 'cp') colMap['CP'] = i;
-                else if(h === 'interchange' || h === 'inter') colMap['Inter'] = i;
-                else if(h === 'offline') colMap['Offline'] = i;
-                else if(h === 'grand total') colMap['Grand Total'] = i;
-                else if(h && !h.includes('total')) {
+                if (h === 'onsite') colMap['Onsite'] = i;
+                else if (h === 'cp') colMap['CP'] = i;
+                else if (h === 'interchange' || h === 'inter') colMap['Inter'] = i;
+                else if (h === 'offline') colMap['Offline'] = i;
+                else if (h === 'grand total') colMap['Grand Total'] = i;
+                else if (h && !h.includes('total')) {
                     dateCols.push({ name: headers[i], idx: i });
                 }
             }
@@ -268,15 +330,15 @@
             outputCols = outputCols.filter(c => {
                 let colIdx = c.key === 'Date' ? c.idx : colMap[c.key];
                 if (colIdx === undefined) return false; // Column completely missing
-                
+
                 // Check if any row has a > 0 value in this column
-                for(let i = headerIdx + 1; i < lines.length; i++) {
+                for (let i = headerIdx + 1; i < lines.length; i++) {
                     const row = lines[i];
-                    if(!row || row.length === 0 || row[0] === undefined) continue;
-                    if(row.every(c => !c.trim())) continue; // skip completely empty
-                    
+                    if (!row || row.length === 0 || row[0] === undefined) continue;
+                    if (row.every(c => !c.trim())) continue; // skip completely empty
+
                     const val = row[colIdx];
-                    if(val && val.trim() !== '') {
+                    if (val && val.trim() !== '') {
                         const num = parseInt(val.trim().replace(/,/g, ''), 10);
                         if (!isNaN(num) && num > 0) return true;
                     }
@@ -294,20 +356,20 @@
             const thead = document.getElementById('table-head-row');
             thead.className = "text-slate-600 border-b border-gray-200 uppercase tracking-wider font-semibold";
             thead.innerHTML = `<th class="px-2 py-3 align-bottom leading-tight min-w-[100px]">Delivery Location</th><th class="px-2 py-3 align-bottom leading-tight min-w-[60px]">Product</th>`;
-            
+
             outputCols.forEach(c => {
                 let thClass = 'px-0 align-middle w-7';
                 let innerContent = `<div class="h-20 relative w-full"><div class="absolute inset-0 flex items-center justify-center"><div class="-rotate-90 whitespace-nowrap text-[10px] tracking-wider">${c.label}</div></div></div>`;
-                
-                if(c.label === highlightLabel) {
+
+                if (c.label === highlightLabel) {
                     thead.innerHTML += `<th class="${thClass} bg-blue-50 text-blue-700">${innerContent}</th>`;
-                } else if(c.label === 'Offline') {
+                } else if (c.label === 'Offline') {
                     thead.innerHTML += `<th class="${thClass} text-orange-600">${innerContent}</th>`;
                 } else {
                     thead.innerHTML += `<th class="${thClass}">${innerContent}</th>`;
                 }
             });
-            
+
             let gtThClass = 'px-0 align-middle w-12';
             let gtInnerContent = `<div class="h-20 relative w-full"><div class="absolute inset-0 flex items-center justify-center"><div class="-rotate-90 text-[10px] tracking-wider leading-tight text-center">Grand<br>Total</div></div></div>`;
             thead.innerHTML += `<th class="${gtThClass} bg-slate-100 text-slate-800">${gtInnerContent}</th>`;
@@ -316,39 +378,39 @@
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
 
-            for(let i = headerIdx + 1; i < lines.length; i++) {
+            for (let i = headerIdx + 1; i < lines.length; i++) {
                 const row = lines[i];
-                if(!row || row.length === 0 || row[0] === undefined) continue;
-                
+                if (!row || row.length === 0 || row[0] === undefined) continue;
+
                 const loc = row[0].trim();
                 const prod = (row[1] || '').trim();
-                
-                if(!loc && !prod && row.every(c => !c.trim())) continue; // empty row
+
+                if (!loc && !prod && row.every(c => !c.trim())) continue; // empty row
 
                 const isSubtotal = loc.endsWith('Total') && loc !== 'Grand Total';
                 const isGrandTotal = loc === 'Grand Total';
 
                 let trClass = 'transition-colors';
                 let tdPad = 'py-1.5';
-                if(isSubtotal) {
+                if (isSubtotal) {
                     trClass = 'bg-gray-100 font-semibold text-gray-900 border-b-2 border-gray-200';
                     tdPad = 'py-2';
-                } else if(isGrandTotal) {
+                } else if (isGrandTotal) {
                     trClass = 'bg-slate-800 text-white font-bold text-[11px] sm:text-xs';
                     tdPad = 'py-2.5';
-                } else if(!loc && prod) {
+                } else if (!loc && prod) {
                     trClass = 'transition-colors border-t-0';
                 }
 
                 let html = `<tr class="${trClass}">`;
 
                 // Columns 1 & 2
-                if(isGrandTotal) {
+                if (isGrandTotal) {
                     html += `<td colspan="2" class="px-2 rounded-bl-lg ${tdPad} leading-snug">Grand Total</td>`;
-                } else if(isSubtotal) {
+                } else if (isSubtotal) {
                     html += `<td colspan="2" class="px-2 ${tdPad} leading-snug">${loc}</td>`;
                 } else {
-                    if(loc) {
+                    if (loc) {
                         html += `<td class="px-2 text-gray-900 ${tdPad} leading-snug">${loc}</td>`;
                     } else {
                         html += `<td class="px-2 ${tdPad} leading-snug"></td>`;
@@ -359,36 +421,36 @@
                 // Data Columns
                 outputCols.forEach(c => {
                     let val = '';
-                    if(c.key === 'CP') {
+                    if (c.key === 'CP') {
                         val = colMap['CP'] !== undefined ? (row[colMap['CP']] || '') : '';
-                    } else if(c.key === 'Date') {
+                    } else if (c.key === 'Date') {
                         val = row[c.idx] || '';
                     } else {
                         val = colMap[c.key] !== undefined ? (row[colMap[c.key]] || '') : '';
                     }
                     val = val.trim();
                     const dispVal = val === '' ? '-' : val;
-                    
+
                     // Add text-center to data columns so they align nicely under vertical headers
                     let tdClass = `px-1 ${tdPad} text-center`;
-                    
+
                     // Value styling based on state/value
-                    if(dispVal === '-') tdClass += isGrandTotal ? '' : ' text-gray-400';
-                    else if(c.key === 'Onsite' && isGrandTotal) tdClass += ' text-emerald-400';
-                    else if(c.key === 'Onsite' && !isSubtotal && !isGrandTotal && val !== '') tdClass += ' font-medium';
-                    else if(c.key === 'Inter' && isGrandTotal) tdClass += ' text-purple-300';
-                    else if(c.key === 'Inter' && !isSubtotal && !isGrandTotal && val !== '') tdClass += ' font-medium text-purple-600';
-                    else if(c.key === 'Inter' && isSubtotal && val !== '') tdClass += ' text-purple-700';
-                    else if(c.label === 'Offline') {
-                        if(isGrandTotal) tdClass += ' text-orange-400';
-                        else if(isSubtotal) tdClass += ' text-orange-700';
+                    if (dispVal === '-') tdClass += isGrandTotal ? '' : ' text-gray-400';
+                    else if (c.key === 'Onsite' && isGrandTotal) tdClass += ' text-emerald-400';
+                    else if (c.key === 'Onsite' && !isSubtotal && !isGrandTotal && val !== '') tdClass += ' font-medium';
+                    else if (c.key === 'Inter' && isGrandTotal) tdClass += ' text-purple-300';
+                    else if (c.key === 'Inter' && !isSubtotal && !isGrandTotal && val !== '') tdClass += ' font-medium text-purple-600';
+                    else if (c.key === 'Inter' && isSubtotal && val !== '') tdClass += ' text-purple-700';
+                    else if (c.label === 'Offline') {
+                        if (isGrandTotal) tdClass += ' text-orange-400';
+                        else if (isSubtotal) tdClass += ' text-orange-700';
                         else tdClass += ' font-medium text-orange-600';
                     }
 
                     // Highlight Column Styling
-                    if(c.label === highlightLabel) {
-                        if(isGrandTotal) tdClass += ' bg-slate-700 text-blue-300';
-                        else if(isSubtotal) tdClass += ' font-bold bg-blue-100 text-blue-800';
+                    if (c.label === highlightLabel) {
+                        if (isGrandTotal) tdClass += ' bg-slate-700 text-blue-300';
+                        else if (isSubtotal) tdClass += ' font-bold bg-blue-100 text-blue-800';
                         else tdClass += ' font-semibold bg-blue-50 text-blue-700';
                     }
 
@@ -398,10 +460,10 @@
                 // Grand Total Column
                 const gtIdx = colMap['Grand Total'];
                 const gtVal = gtIdx !== undefined && row[gtIdx] ? row[gtIdx].trim() : '-';
-                
-                if(isGrandTotal) {
+
+                if (isGrandTotal) {
                     html += `<td class="px-1 bg-slate-900 rounded-br-lg border-l border-slate-700 ${tdPad} text-center">${gtVal}</td>`;
-                } else if(isSubtotal) {
+                } else if (isSubtotal) {
                     html += `<td class="px-1 bg-slate-200 ${tdPad} text-center">${gtVal}</td>`;
                 } else {
                     html += `<td class="px-1 bg-slate-50 font-medium ${tdPad} text-center">${gtVal}</td>`;
@@ -409,28 +471,28 @@
 
                 html += `</tr>`;
                 tbody.innerHTML += html;
-                
-                if(isGrandTotal) break; // End of table
+
+                if (isGrandTotal) break; // End of table
             }
         }
 
         function generatePOTable(tsv) {
             const lines = tsv.split(/\r?\n/).filter(line => line.trim().length > 0);
-            if(lines.length === 0) return;
+            if (lines.length === 0) return;
 
             const headers = lines[0].split('\t').map(h => h.trim());
             const colMap = {};
             headers.forEach((h, i) => colMap[h] = i);
 
             const poMap = new Map();
-            
-            for(let i = 1; i < lines.length; i++) {
+
+            for (let i = 1; i < lines.length; i++) {
                 const row = lines[i].split('\t');
                 const po = row[colMap['Purchase Order']] ? row[colMap['Purchase Order']].trim() : '';
-                if(!po) continue;
-                
+                if (!po) continue;
+
                 const poLower = po.toLowerCase();
-                if(poLower.includes('outbound') || poLower.includes('ict') || poLower.includes('return')) continue;
+                if (poLower.includes('outbound') || poLower.includes('ict') || poLower.includes('return')) continue;
 
                 const loc = row[colMap['Delivery Location']] ? row[colMap['Delivery Location']].trim() : '';
                 const prod = row[colMap['Product']] ? row[colMap['Product']].trim() : '';
@@ -442,7 +504,7 @@
 
                 const mapKey = `${po}_${loc}_${prod}`; // Unique key to handle edge cases if PO is reused across locs
 
-                if(!poMap.has(mapKey)) {
+                if (!poMap.has(mapKey)) {
                     poMap.set(mapKey, {
                         po: po,
                         loc: loc,
@@ -459,16 +521,16 @@
 
                 const pData = poMap.get(mapKey);
                 pData.total++;
-                
-                if(tripComplete === 'yes') {
+
+                if (tripComplete === 'yes') {
                     pData.received++;
                 } else {
-                    if(waybill) {
+                    if (waybill) {
                         pData.shipped++;
                     } else {
                         pData.remaining++;
                     }
-                    if(eta) {
+                    if (eta) {
                         pData.etas.push(eta);
                     }
                 }
@@ -477,14 +539,14 @@
             const activePOs = Array.from(poMap.values()).filter(p => p.total > p.received);
 
             activePOs.sort((a, b) => {
-                if(a.loc !== b.loc) return a.loc.localeCompare(b.loc);
-                if(a.prod !== b.prod) return a.prod.localeCompare(b.prod);
+                if (a.loc !== b.loc) return a.loc.localeCompare(b.loc);
+                if (a.prod !== b.prod) return a.prod.localeCompare(b.prod);
                 return a.po.localeCompare(b.po);
             });
 
             const thead = document.getElementById('table-head-row');
             thead.className = "text-slate-600 border-b-2 border-gray-300 uppercase tracking-wider font-semibold bg-slate-100";
-            
+
             const thClass = "px-2 py-3 align-bottom leading-tight text-[11px] sm:text-xs !text-center";
             const thNumClass = "px-2 py-3 align-bottom leading-tight !text-center text-[11px] sm:text-xs";
             thead.innerHTML = `
@@ -505,14 +567,20 @@
 
             // 1. Build flat array of all rows to render (POs and Subtotals)
             let renderRows = [];
-            let currentLoc = '';
-            let currentProd = '';
-            let groupPOs = [];
+            let groupedPOs = new Map();
 
-            function pushSubtotal() {
-                if (groupPOs.length > 1) {
+            activePOs.forEach(p => {
+                let key = `${p.loc}_${p.prod}`;
+                if (!groupedPOs.has(key)) {
+                    groupedPOs.set(key, { loc: p.loc, prod: p.prod, pos: [] });
+                }
+                groupedPOs.get(key).pos.push(p);
+            });
+
+            for (let [key, group] of groupedPOs) {
+                if (group.pos.length > 1) {
                     let stOrdered = 0, stReceived = 0, stShipped = 0, stRemaining = 0;
-                    groupPOs.forEach(p => {
+                    group.pos.forEach(p => {
                         stOrdered += p.total;
                         stReceived += p.received;
                         stShipped += p.shipped;
@@ -520,35 +588,27 @@
                     });
                     renderRows.push({
                         type: 'subtotal',
-                        loc: currentLoc,
-                        prod: currentProd,
+                        loc: group.loc,
+                        prod: group.prod,
                         ordered: stOrdered,
                         received: stReceived,
                         shipped: stShipped,
                         remaining: stRemaining
                     });
                 }
-                groupPOs = [];
+                
+                group.pos.forEach(p => {
+                    renderRows.push({
+                        type: 'po',
+                        data: p,
+                        loc: p.loc,
+                        prod: p.prod
+                    });
+                });
             }
 
-            activePOs.forEach(p => {
-                if (p.loc !== currentLoc || p.prod !== currentProd) {
-                    if (currentLoc !== '') pushSubtotal();
-                    currentLoc = p.loc;
-                    currentProd = p.prod;
-                }
-                groupPOs.push(p);
-                renderRows.push({
-                    type: 'po',
-                    data: p,
-                    loc: p.loc,
-                    prod: p.prod
-                });
-            });
-            if (currentLoc !== '') pushSubtotal();
-
             // 2. Pre-calculate wire boundaries
-            let lastNamedProdRowForLoc = {}; 
+            let lastNamedProdRowForLoc = {};
             let lastRowForProdGroup = {};
 
             for (let i = 0; i < renderRows.length; i++) {
@@ -556,7 +616,7 @@
                 if (!lastNamedProdRowForLoc[r.loc]) lastNamedProdRowForLoc[r.loc] = {};
                 if (lastNamedProdRowForLoc[r.loc][r.prod] === undefined) {
                     lastNamedProdRowForLoc[r.loc].lastIndex = i;
-                    lastNamedProdRowForLoc[r.loc][r.prod] = i; 
+                    lastNamedProdRowForLoc[r.loc][r.prod] = i;
                 }
                 lastRowForProdGroup[`${r.loc}_${r.prod}`] = i;
             }
@@ -564,9 +624,9 @@
             // 3. Assign wire types
             for (let i = 0; i < renderRows.length; i++) {
                 let r = renderRows[i];
-                
+
                 // Location Wire
-                let firstRowOfLoc = i === 0 || renderRows[i-1].loc !== r.loc;
+                let firstRowOfLoc = i === 0 || renderRows[i - 1].loc !== r.loc;
                 if (firstRowOfLoc) {
                     r.locWire = '';
                 } else {
@@ -599,7 +659,7 @@
             // 4. Render HTML
             const tdClass = "px-3 py-2.5 align-middle text-sm text-gray-800 !text-left";
             const tdNumClass = "px-3 py-2.5 align-middle text-sm text-gray-800 !text-center font-medium";
-            
+
             function renderWire(wireType) {
                 if (wireType === 'I') return `<div class="absolute right-8 top-0 bottom-0 border-l-2 border-slate-300"></div>`;
                 if (wireType === 'T') return `<div class="absolute right-8 top-0 bottom-0 border-l-2 border-slate-300"></div><div class="absolute right-0 top-1/2 w-8 border-t-2 border-slate-300"></div>`;
@@ -609,9 +669,9 @@
 
             for (let i = 0; i < renderRows.length; i++) {
                 let r = renderRows[i];
-                let isFirstOfLoc = i === 0 || renderRows[i-1].loc !== r.loc;
-                let isFirstOfProd = isFirstOfLoc || renderRows[i-1].prod !== r.prod;
-                
+                let isFirstOfLoc = i === 0 || renderRows[i - 1].loc !== r.loc;
+                let isFirstOfProd = isFirstOfLoc || renderRows[i - 1].prod !== r.prod;
+
                 let dispLoc = isFirstOfLoc ? r.loc : '';
                 let dispProd = isFirstOfProd ? r.prod : '';
 
@@ -619,9 +679,11 @@
 
                 if (r.type === 'subtotal') {
                     html += `<tr class="${borderClass} bg-slate-50/50">
-                        <td class="${tdClass} relative">${renderWire(r.locWire)}</td>
-                        <td class="${tdClass} relative">${renderWire(r.prodWire)}</td>
-                        <td class="${tdClass} !font-bold !text-slate-900" colspan="3">${r.loc} ${r.prod} Total</td>
+                        <td class="${tdClass} relative font-bold text-slate-900">${dispLoc}${renderWire(r.locWire)}</td>
+                        <td class="${tdClass} relative font-bold text-slate-900">${dispProd}${renderWire(r.prodWire)}</td>
+                        <td class="${tdClass} !font-bold !text-slate-900">Total</td>
+                        <td class="${tdClass}"></td>
+                        <td class="${tdNumClass}"></td>
                         <td class="${tdNumClass} !font-bold !text-slate-900">${r.ordered}</td>
                         <td class="${tdNumClass} !font-bold text-emerald-700">${r.received > 0 ? r.received : '-'}</td>
                         <td class="${tdNumClass} !font-bold text-blue-700">${r.shipped > 0 ? r.shipped : '-'}</td>
@@ -636,24 +698,24 @@
                         let hasOnsite = false, hasInter = false, hasOffline = false;
                         p.etas.forEach(e => {
                             let lower = e.toLowerCase();
-                            if(lower === 'onsite') hasOnsite = true;
-                            else if(lower === 'interchange') hasInter = true;
-                            else if(lower === 'offline') hasOffline = true;
-                            else if(e.includes('/')) dates.push(e);
+                            if (lower === 'onsite') hasOnsite = true;
+                            else if (lower === 'interchange') hasInter = true;
+                            else if (lower === 'offline') hasOffline = true;
+                            else if (e.includes('/')) dates.push(e);
                         });
-                        if(dates.length > 0) {
+                        if (dates.length > 0) {
                             dates.sort();
                             etaText = dates[0];
-                        } else if(hasOnsite) etaText = 'Onsite';
-                        else if(hasInter) etaText = 'Interchange';
-                        else if(hasOffline) etaText = 'Offline';
+                        } else if (hasOnsite) etaText = 'Onsite';
+                        else if (hasInter) etaText = 'Interchange';
+                        else if (hasOffline) etaText = 'Offline';
                     }
 
                     let etaStyle = '';
-                    if(etaText === 'Onsite') etaStyle = 'text-emerald-600 font-semibold';
-                    else if(etaText === 'Interchange') etaStyle = 'text-purple-600 font-semibold';
-                    else if(etaText === 'Offline') etaStyle = 'text-orange-600 font-semibold';
-                    else if(etaText) etaStyle = 'text-blue-600 font-semibold';
+                    if (etaText === 'Onsite') etaStyle = 'text-emerald-600 font-semibold';
+                    else if (etaText === 'Interchange') etaStyle = 'text-purple-600 font-semibold';
+                    else if (etaText === 'Offline') etaStyle = 'text-orange-600 font-semibold';
+                    else if (etaText) etaStyle = 'text-blue-600 font-semibold';
 
                     html += `<tr class="${borderClass} hover:bg-slate-50 transition-colors">
                         <td class="${tdClass} relative font-bold text-slate-900">${dispLoc}${renderWire(r.locWire)}</td>
@@ -670,7 +732,7 @@
                 }
             }
 
-            if(activePOs.length === 0) {
+            if (activePOs.length === 0) {
                 html = `<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500 italic text-sm">No active purchase orders found.</td></tr>`;
             }
 
@@ -685,4 +747,5 @@
         }
     </script>
 </body>
+
 </html>
