@@ -441,15 +441,20 @@
             const element = document.getElementById('capture-area');
             const container = element.querySelector('.matrix-container');
 
-            // Temporarily remove overflow constraints to capture full height
-            const origElementHeight = element.style.height;
-            const origElementMaxHeight = element.style.maxHeight;
-            const origContainerHeight = container.style.height;
-            const origContainerMaxHeight = container.style.maxHeight;
-            const origContainerOverflow = container.style.overflow;
+            // Temporarily remove overflow constraints and break out of flex layouts
+            const origElementStyle = element.getAttribute('style');
+            const origContainerStyle = container.getAttribute('style');
+            const origBodyOverflow = document.body.style.overflow;
             
+            document.body.style.overflow = 'visible';
+            
+            element.style.position = 'absolute';
+            element.style.top = '0';
+            element.style.left = '0';
             element.style.height = 'auto';
             element.style.maxHeight = 'none';
+            element.style.zIndex = '9999';
+            
             container.style.height = 'auto';
             container.style.maxHeight = 'none';
             container.style.overflow = 'visible';
@@ -463,11 +468,13 @@
                     height: element.scrollHeight
                 }).then(canvas => {
                     // Restore constraints
-                    element.style.height = origElementHeight;
-                    element.style.maxHeight = origElementMaxHeight;
-                    container.style.height = origContainerHeight;
-                    container.style.maxHeight = origContainerMaxHeight;
-                    container.style.overflow = origContainerOverflow;
+                    document.body.style.overflow = origBodyOverflow;
+                    
+                    if (origElementStyle === null) element.removeAttribute('style');
+                    else element.setAttribute('style', origElementStyle);
+                    
+                    if (origContainerStyle === null) container.removeAttribute('style');
+                    else container.setAttribute('style', origContainerStyle);
 
                     canvas.toBlob(blob => {
                         const file = new File([blob], `${prefix}_${dateStr}.png`, { type: 'image/png' });
