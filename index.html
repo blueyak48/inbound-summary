@@ -478,17 +478,17 @@
 
                     canvas.toBlob(blob => {
                         const file = new File([blob], `${prefix}_${dateStr}.png`, { type: 'image/png' });
-                        if (navigator.share) {
-                            navigator.share({
-                                title: 'Rail Summary',
-                                files: [file]
-                            }).catch(console.error);
-                        } else if (window.AndroidShareHandler) {
+                        if (window.AndroidShareHandler) {
                             const reader = new FileReader();
                             reader.onloadend = function() {
                                 window.AndroidShareHandler.shareImage(reader.result, `${prefix}_${dateStr}.png`);
                             }
                             reader.readAsDataURL(blob);
+                        } else if (navigator.share && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                            navigator.share({
+                                title: 'Rail Summary',
+                                files: [file]
+                            }).catch(console.error);
                         } else {
                             const link = document.createElement('a');
                             link.download = `${prefix}_${dateStr}.png`;
