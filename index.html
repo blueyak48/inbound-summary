@@ -454,36 +454,44 @@
             container.style.maxHeight = 'none';
             container.style.overflow = 'visible';
 
-            html2canvas(element, { scale: 2, backgroundColor: null }).then(canvas => {
-                // Restore constraints
-                element.style.height = origElementHeight;
-                element.style.maxHeight = origElementMaxHeight;
-                container.style.height = origContainerHeight;
-                container.style.maxHeight = origContainerMaxHeight;
-                container.style.overflow = origContainerOverflow;
+            setTimeout(() => {
+                html2canvas(element, { 
+                    scale: 2, 
+                    backgroundColor: null,
+                    scrollY: -window.scrollY,
+                    windowHeight: element.scrollHeight,
+                    height: element.scrollHeight
+                }).then(canvas => {
+                    // Restore constraints
+                    element.style.height = origElementHeight;
+                    element.style.maxHeight = origElementMaxHeight;
+                    container.style.height = origContainerHeight;
+                    container.style.maxHeight = origContainerMaxHeight;
+                    container.style.overflow = origContainerOverflow;
 
-                canvas.toBlob(blob => {
-                    const file = new File([blob], `${prefix}_${dateStr}.png`, { type: 'image/png' });
-                    if (navigator.share) {
-                        navigator.share({
-                            title: 'Rail Summary',
-                            files: [file]
-                        }).catch(console.error);
-                    } else if (window.AndroidShareHandler) {
-                        const reader = new FileReader();
-                        reader.onloadend = function() {
-                            window.AndroidShareHandler.shareImage(reader.result, `${prefix}_${dateStr}.png`);
+                    canvas.toBlob(blob => {
+                        const file = new File([blob], `${prefix}_${dateStr}.png`, { type: 'image/png' });
+                        if (navigator.share) {
+                            navigator.share({
+                                title: 'Rail Summary',
+                                files: [file]
+                            }).catch(console.error);
+                        } else if (window.AndroidShareHandler) {
+                            const reader = new FileReader();
+                            reader.onloadend = function() {
+                                window.AndroidShareHandler.shareImage(reader.result, `${prefix}_${dateStr}.png`);
+                            }
+                            reader.readAsDataURL(blob);
+                        } else {
+                            const link = document.createElement('a');
+                            link.download = `${prefix}_${dateStr}.png`;
+                            link.href = URL.createObjectURL(blob);
+                            link.click();
+                            URL.revokeObjectURL(link.href);
                         }
-                        reader.readAsDataURL(blob);
-                    } else {
-                        const link = document.createElement('a');
-                        link.download = `${prefix}_${dateStr}.png`;
-                        link.href = URL.createObjectURL(blob);
-                        link.click();
-                        URL.revokeObjectURL(link.href);
-                    }
+                    });
                 });
-            });
+            }, 100);
         });
 
         function generateTable(tsv) {
