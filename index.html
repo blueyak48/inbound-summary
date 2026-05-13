@@ -439,7 +439,29 @@
             const prefix = currentTab === 'inbound' ? 'Rail_Inbound_Summary' : 'Rail_Purchase_Order_Summary';
             const dateStr = new Date().toISOString().split('T')[0];
             const element = document.getElementById('capture-area');
+            const container = element.querySelector('.matrix-container');
+
+            // Temporarily remove overflow constraints to capture full height
+            const origElementHeight = element.style.height;
+            const origElementMaxHeight = element.style.maxHeight;
+            const origContainerHeight = container.style.height;
+            const origContainerMaxHeight = container.style.maxHeight;
+            const origContainerOverflow = container.style.overflow;
+            
+            element.style.height = 'auto';
+            element.style.maxHeight = 'none';
+            container.style.height = 'auto';
+            container.style.maxHeight = 'none';
+            container.style.overflow = 'visible';
+
             html2canvas(element, { scale: 2, backgroundColor: null }).then(canvas => {
+                // Restore constraints
+                element.style.height = origElementHeight;
+                element.style.maxHeight = origElementMaxHeight;
+                container.style.height = origContainerHeight;
+                container.style.maxHeight = origContainerMaxHeight;
+                container.style.overflow = origContainerOverflow;
+
                 canvas.toBlob(blob => {
                     const file = new File([blob], `${prefix}_${dateStr}.png`, { type: 'image/png' });
                     if (navigator.share) {
@@ -456,8 +478,9 @@
                     } else {
                         const link = document.createElement('a');
                         link.download = `${prefix}_${dateStr}.png`;
-                        link.href = canvas.toDataURL('image/png');
+                        link.href = URL.createObjectURL(blob);
                         link.click();
+                        URL.revokeObjectURL(link.href);
                     }
                 });
             });
@@ -609,18 +632,21 @@
 
             for (const loc of sortedLocs) {
                 const locData = locMap.get(loc);
+                if (locData.total === 0) continue; // Skip empty locations
+
                 const sortedProds = Array.from(locData.prods.keys()).sort();
+                let isFirstProd = true;
 
                 for (const prod of sortedProds) {
                     const prodData = locData.prods.get(prod);
+                    if (prodData.total === 0) continue; // Skip empty products
+
                     let html = `<tr class="transition-colors border-t-0">`;
                     
-                    // Don't repeat location for every row if desired, but here we do simple layout.
-                    // Wait, original layout hides Location if it's the same, let's keep it simple or implement hiding.
-                    // Let's implement hiding for cleaner look.
-                    const isFirstProd = prod === sortedProds[0];
                     html += `<td class="px-2 text-gray-900 py-1.5 leading-snug">${isFirstProd ? loc : ''}</td>`;
                     html += `<td class="px-2 py-1.5 leading-snug">${prod}</td>`;
+                    
+                    isFirstProd = false;
 
                     outputCols.forEach(c => {
                         const count = prodData.etas[c.key] || 0;
