@@ -9,6 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <meta name="theme-color" content="#1e293b">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -23,10 +24,22 @@
         .matrix-table td {
             text-align: right;
             vertical-align: middle;
+            white-space: nowrap;
         }
 
-        .matrix-table th:first-child,
-        .matrix-table td:first-child {
+        .matrix-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background-color: #f1f5f9;
+        }
+
+        .matrix-table thead th:first-child {
+            z-index: 40;
+        }
+
+        .matrix-table tbody th:first-child,
+        .matrix-table tbody td:first-child {
             text-align: left;
             position: sticky;
             left: 0;
@@ -79,69 +92,113 @@
             text-align: left;
         }
 
-        /* Setup layout styles */
-        #setup-view {
+        /* Pull to refresh styles */
+        #ptr-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
             display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
+            justify-content: center;
+            align-items: center;
+            height: 60px;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+            z-index: 50;
+            pointer-events: none;
         }
 
-        #preview-view {
-            display: none;
+        #ptr-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .refreshing #ptr-container {
+            transform: translateY(0);
+        }
+        
+        .refreshing-body {
+            transform: translateY(60px);
+            transition: transform 0.3s ease;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: #ffffff;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 40;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-item {
+            display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 2rem;
+            justify-content: center;
+            flex: 1;
+            height: 100%;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-item svg {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 6px;
+            transition: stroke 0.2s;
+        }
+
+        .nav-item.active {
+            color: #3b82f6;
+        }
+
+        .nav-item.active svg {
+            stroke: #3b82f6;
         }
     </style>
 </head>
 
-<body class="min-h-screen text-slate-800">
+<body class="h-screen overflow-hidden text-slate-800 bg-gray-50 flex flex-col">
 
-    <!-- SETUP VIEW -->
-    <div id="setup-view">
-        <h1 class="text-2xl font-bold text-slate-900">Generate Rail Summary</h1>
-        <p class="text-slate-600">Fetch the latest pivot table from Google Sheets to generate the summary.</p>
+    <!-- Pull to Refresh Spinner -->
+    <div id="ptr-container">
+        <div id="ptr-spinner"></div>
+    </div>
 
-        <div class="flex flex-col gap-4 w-full max-w-md">
-            <div class="flex justify-between items-center w-full gap-4">
-                <label class="font-semibold whitespace-nowrap">Report Type:</label>
-                <select id="report-type"
-                    class="w-full border border-gray-300 rounded px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                    <option value="inbound">Rail Inbound Summary</option>
-                    <option value="po">Rail Purchase Order Summary</option>
-                </select>
-            </div>
-
-            <div class="flex justify-between items-center w-full gap-4">
-                <label class="font-semibold whitespace-nowrap">Report Date:</label>
-                <input type="date" id="report-date"
-                    class="w-full border border-gray-300 rounded px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none">
+    <!-- MAIN CONTENT -->
+    <div id="main-content" class="w-full flex-1 flex flex-col min-h-0 pb-24 px-2 sm:px-4 transition-transform duration-300" style="padding-top: calc(1rem + env(safe-area-inset-top));">
+        
+        <div id="loading" class="text-blue-600 font-medium text-center py-8 hidden">
+            <div class="flex flex-col items-center gap-3">
+                <div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                <div>Fetching latest data...</div>
             </div>
         </div>
 
-        <button id="fetch-btn"
-            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition shadow-sm self-start flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            Fetch Data & Generate Preview
-        </button>
-        <div id="loading" class="text-blue-600 font-medium hidden">Fetching data from Google Sheets...</div>
-    </div>
-
-    <!-- PREVIEW VIEW -->
-    <div id="preview-view" class="w-full pb-12">
-        <div class="w-max max-w-full mx-auto flex flex-col">
-            <div class="flex justify-between w-full mb-4 gap-4 px-1">
-                <button id="back-btn"
-                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition">
-                    &larr; Back
-                </button>
+        <div id="preview-view" class="w-full h-full mx-auto flex flex-col hidden min-h-0">
+            <div class="flex justify-between w-full mb-4 gap-4 px-1 items-center shrink-0">
+                <div class="text-sm font-semibold text-slate-500" id="last-updated"></div>
                 <div class="flex gap-2">
                     <button id="download-btn"
                         class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition shadow-sm flex items-center gap-2">
@@ -157,8 +214,8 @@
 
             <!-- THE TABLE -->
             <div id="capture-area"
-                class="bg-white sm:rounded-xl sm:shadow-lg border sm:border border-gray-200 overflow-hidden w-full">
-                <div class="bg-slate-800 px-3 sm:px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+                class="bg-white sm:rounded-xl sm:shadow-lg border sm:border border-gray-200 w-full flex-1 flex flex-col min-h-0">
+                <div class="bg-slate-800 px-3 sm:px-4 py-3 border-b border-slate-700 flex justify-between items-center rounded-t-xl shrink-0">
                     <div>
                         <h2
                             class="text-base sm:text-lg font-semibold text-white tracking-wide uppercase flex items-center gap-2">
@@ -174,7 +231,7 @@
                     </div>
                 </div>
 
-                <div class="matrix-container overflow-x-auto">
+                <div class="matrix-container flex-1 overflow-auto">
                     <table class="matrix-table text-[10px] sm:text-xs text-gray-700 mx-auto" id="result-table">
                         <thead>
                             <tr id="table-head-row"
@@ -191,12 +248,53 @@
         </div>
     </div>
 
-    <script>
-        // Set default date
-        document.getElementById('report-date').valueAsDate = new Date();
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" id="tab-inbound" onclick="switchTab('inbound')">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            <span>Inbound</span>
+        </div>
+        <div class="nav-item" id="tab-po" onclick="switchTab('po')">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            <span>POs</span>
+        </div>
+    </nav>
 
-        const INBOUND_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkTbgVZmqUfy2tr9WS7lIkFjFPe2_6ws1YeuZdvB5syDdbCQCRkGwCoOVM-lcjVNEUo-scS4QajqJV/pub?gid=987654321&single=true&output=tsv";
-        const PO_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkTbgVZmqUfy2tr9WS7lIkFjFPe2_6ws1YeuZdvB5syDdbCQCRkGwCoOVM-lcjVNEUo-scS4QajqJV/pub?gid=0&single=true&output=tsv";
+    <!-- Modal -->
+    <div id="car-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 px-4">
+        <div class="bg-white rounded-xl shadow-2xl w-auto max-w-[95vw] md:max-w-2xl max-h-[80vh] flex flex-col transform scale-95 transition-transform duration-300">
+            <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                <h3 id="modal-title" class="font-bold text-slate-800 text-base">Car Details</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="p-0 overflow-y-auto flex-1">
+                <table class="text-left text-xs text-slate-600 min-w-full">
+                    <thead class="bg-slate-50 sticky top-0 border-b border-slate-200 shadow-sm">
+                        <tr id="modal-thead-row">
+                            <!-- Populated dynamically -->
+                        </tr>
+                    </thead>
+                    <tbody id="modal-tbody" class="divide-y divide-slate-100">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'inbound';
+        let isFetching = false;
+        let cachedTSV = { data: null };
+        let lastFetchTime = { data: 0 };
+
+        const DATA_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkTbgVZmqUfy2tr9WS7lIkFjFPe2_6ws1YeuZdvB5syDdbCQCRkGwCoOVM-lcjVNEUo-scS4QajqJV/pub?gid=0&single=true&output=tsv";
 
         // Fallback array of CORS proxies to ensure high availability
         const PROXIES = [
@@ -205,172 +303,298 @@
             "https://corsproxy.io/?"
         ];
 
-        document.getElementById('fetch-btn').addEventListener('click', async () => {
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('fetch-btn').disabled = true;
+        async function fetchTSV(url) {
+            for (const proxyBase of PROXIES) {
+                try {
+                    const response = await fetch(proxyBase + encodeURIComponent(url));
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return await response.text();
+                } catch (err) {
+                    console.warn(`Proxy ${proxyBase} failed for ${url}:`, err);
+                }
+            }
+            throw new Error('All CORS proxies failed.');
+        }
 
-            const reportType = document.getElementById('report-type').value;
-            const SHEET_URL = reportType === 'inbound' ? INBOUND_URL : PO_URL;
+        async function fetchData(force = false, isSilent = false) {
+            if (isFetching) return;
+
+            const now = Date.now();
+            const needsData = force || !cachedTSV.data || (now - lastFetchTime.data >= 21600000);
+
+            if (!needsData) {
+                renderTab(cachedTSV.data);
+                return;
+            }
+
+            isFetching = true;
+
+            if (!isSilent && !cachedTSV.data) {
+                document.getElementById('loading').classList.remove('hidden');
+                document.getElementById('preview-view').classList.add('hidden');
+            }
 
             try {
-                let tsv = null;
+                const res = await fetchTSV(DATA_URL);
+                cachedTSV.data = res;
+                lastFetchTime.data = Date.now();
 
-                for (const proxyBase of PROXIES) {
-                    try {
-                        const response = await fetch(proxyBase + encodeURIComponent(SHEET_URL));
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        tsv = await response.text();
-                        break; // Success, exit the proxy loop
-                    } catch (err) {
-                        console.warn(`Proxy ${proxyBase} failed:`, err);
-                    }
-                }
-
-                if (!tsv) {
-                    throw new Error('All CORS proxies failed. Google Sheets may be blocking the requests, or you may be offline.');
-                }
-
-                if (reportType === 'inbound') {
-                    generateTable(tsv);
-                } else {
-                    generatePOTable(tsv);
-                }
-
-                // Format subtitle date
-                const dateVal = document.getElementById('report-date').value;
-                const dateObj = new Date(dateVal + 'T00:00:00'); // avoid timezone offset
-                const options = { month: 'long', day: 'numeric', year: 'numeric' };
-                let titleDisplay = document.querySelector('#preview-view h2');
-                let subtitleText = 'Summary of Inbound Car Counts';
-
-                if (reportType === 'inbound') {
-                    titleDisplay.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg> RAIL INBOUND SUMMARY`;
-                    subtitleText = 'Summary of Inbound Car Counts';
-                } else {
-                    titleDisplay.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg> RAIL PURCHASE ORDER SUMMARY`;
-                    subtitleText = 'Summary of Active Purchase Orders';
-                }
-
-                document.getElementById('report-subtitle').innerText = `${subtitleText} - ${dateObj.toLocaleDateString('en-US', options)}`;
-
-                document.getElementById('setup-view').style.display = 'none';
-                document.getElementById('preview-view').style.display = 'flex';
+                renderTab(cachedTSV.data);
             } catch (err) {
-                alert('Error fetching data: ' + err.message);
+                if (!isSilent) alert('Error fetching data: ' + err.message);
+                console.error(err);
             } finally {
                 document.getElementById('loading').classList.add('hidden');
-                document.getElementById('fetch-btn').disabled = false;
+                isFetching = false;
+                document.body.classList.remove('refreshing');
+                document.getElementById('main-content').classList.remove('refreshing-body');
             }
+        }
+
+        function openModal(title, cols, cars) {
+            document.getElementById('modal-title').innerText = title;
+            const thead = document.getElementById('modal-thead-row');
+            
+            const getColClass = (colName, isHeader) => {
+                let cls = isHeader ? "px-3 py-2 font-semibold text-slate-700 align-bottom leading-tight" : "px-3 py-2 align-top";
+                if (colName === 'Line Item') cls += " w-12 sm:w-16 text-center";
+                else if (colName === 'Waybill Date') cls += " w-16 sm:w-20 text-center";
+                else if (colName === 'ETA') cls += " w-16 text-center";
+                else if (colName === 'Car Number') cls += " w-24 whitespace-nowrap";
+                else if (colName === 'Comments') cls += " min-w-[120px]"; // Let it expand
+                else cls += " whitespace-nowrap";
+                return cls;
+            };
+
+            thead.innerHTML = cols.map(c => `<th class="${getColClass(c, true)}">${c}</th>`).join('');
+            
+            const tbody = document.getElementById('modal-tbody');
+            if (cars.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${cols.length}" class="px-4 py-8 text-center text-slate-400 italic">No cars found.</td></tr>`;
+            } else {
+                tbody.innerHTML = cars.map(car => {
+                    return `<tr class="hover:bg-slate-50 transition-colors">` + 
+                        cols.map(c => `<td class="${getColClass(c, false)}">${car[c] || '-'}</td>`).join('') +
+                    `</tr>`;
+                }).join('');
+            }
+
+            const modal = document.getElementById('car-modal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.querySelector('div').classList.remove('scale-95');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('car-modal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('div').classList.add('scale-95');
+        }
+        
+        // Close modal on outside click
+        document.getElementById('car-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'car-modal') closeModal();
         });
 
-        document.getElementById('back-btn').addEventListener('click', () => {
-            document.getElementById('preview-view').style.display = 'none';
-            document.getElementById('setup-view').style.display = 'flex';
-        });
+        function renderTab(tsv) {
+            if (currentTab === 'inbound') {
+                generateTable(tsv);
+            } else {
+                generatePOTable(tsv);
+            }
+
+            // Format subtitle date
+            const dateObj = new Date(lastFetchTime.data || Date.now()); 
+            const options = { month: 'long', day: 'numeric', year: 'numeric' };
+            let titleDisplay = document.querySelector('#preview-view h2');
+            let subtitleText = 'Summary of Inbound Car Counts';
+
+            if (currentTab === 'inbound') {
+                titleDisplay.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg> RAIL INBOUND SUMMARY`;
+                subtitleText = 'Summary of Inbound Car Counts';
+            } else {
+                titleDisplay.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg> RAIL PURCHASE ORDER SUMMARY`;
+                subtitleText = 'Summary of Active Purchase Orders';
+            }
+
+            document.getElementById('report-subtitle').innerText = `${subtitleText} - ${dateObj.toLocaleDateString('en-US', options)}`;
+            
+            // Update Last Updated Text
+            const timeStr = dateObj.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('last-updated').innerText = `Updated: ${timeStr}`;
+
+            document.getElementById('preview-view').classList.remove('hidden');
+        }
+
+        function switchTab(tab) {
+            if (currentTab === tab || isFetching) return;
+            currentTab = tab;
+            
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            
+            fetchData();
+        }
 
         document.getElementById('download-btn').addEventListener('click', () => {
-            const reportType = document.getElementById('report-type').value;
-            const prefix = reportType === 'inbound' ? 'Rail_Inbound_Summary' : 'Rail_Purchase_Order_Summary';
+            const prefix = currentTab === 'inbound' ? 'Rail_Inbound_Summary' : 'Rail_Purchase_Order_Summary';
+            const dateStr = new Date().toISOString().split('T')[0];
             const element = document.getElementById('capture-area');
             html2canvas(element, { scale: 2, backgroundColor: null }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `${prefix}_${document.getElementById('report-date').value}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+                canvas.toBlob(blob => {
+                    const file = new File([blob], `${prefix}_${dateStr}.png`, { type: 'image/png' });
+                    if (navigator.share) {
+                        navigator.share({
+                            title: 'Rail Summary',
+                            files: [file]
+                        }).catch(console.error);
+                    } else if (window.AndroidShareHandler) {
+                        const reader = new FileReader();
+                        reader.onloadend = function() {
+                            window.AndroidShareHandler.shareImage(reader.result, `${prefix}_${dateStr}.png`);
+                        }
+                        reader.readAsDataURL(blob);
+                    } else {
+                        const link = document.createElement('a');
+                        link.download = `${prefix}_${dateStr}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                    }
+                });
             });
         });
 
         function generateTable(tsv) {
-            const lines = tsv.split('\n').map(l => l.split('\t'));
+            const lines = tsv.split(/\r?\n/).filter(line => line.trim().length > 0);
+            if (lines.length < 2) return;
 
-            // Find header row
-            let headerIdx = -1;
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i][0] && lines[i][0].trim() === 'Delivery Location') {
-                    headerIdx = i;
-                    break;
-                }
-            }
-            if (headerIdx === -1) { alert('Could not find header row starting with "Delivery Location"'); return; }
-
-            const headers = lines[headerIdx].map(h => h.trim());
-
-            // Map columns
+            const headers = lines[0].split('\t').map(h => h.trim());
             const colMap = {};
-            let dateCols = [];
+            headers.forEach((h, i) => colMap[h] = i);
+            
+            // ETA column could be ETA or Current ETA
+            const etaColIdx = colMap['ETA'] !== undefined ? colMap['ETA'] : colMap['Current ETA'];
 
-            for (let i = 2; i < headers.length; i++) {
-                const h = headers[i].toLowerCase();
-                if (h === 'onsite') colMap['Onsite'] = i;
-                else if (h === 'cp') colMap['CP'] = i;
-                else if (h === 'interchange' || h === 'inter') colMap['Inter'] = i;
-                else if (h === 'offline') colMap['Offline'] = i;
-                else if (h === 'grand total') colMap['Grand Total'] = i;
-                else if (h && !h.includes('total')) {
-                    dateCols.push({ name: headers[i], idx: i });
+            // We need to group by Location and Product
+            // Data structure:
+            // locMap = { locName: { total: 0, prods: { prodName: { total: 0, etas: { etaKey: count }, cars: { etaKey: [] } } } } }
+            const locMap = new Map();
+            const allEtas = new Set();
+
+            for (let i = 1; i < lines.length; i++) {
+                const row = lines[i].split('\t');
+                let loc = row[colMap['Delivery Location']] ? row[colMap['Delivery Location']].trim() : '';
+                let rawProd = row[colMap['Product']] ? row[colMap['Product']].trim() : '';
+                const poStr = row[colMap['Purchase Order']] ? row[colMap['Purchase Order']].trim().toLowerCase() : '';
+                
+                if (!loc && !rawProd && !poStr) continue;
+                
+                let prod = rawProd;
+                if (poStr.includes('return') || poStr.includes('outbound')) {
+                    prod = 'Empty';
+                } else if (poStr.includes('ict')) {
+                    prod = rawProd || 'ATS'; // ICT usually ATS
+                }
+                if (!prod) prod = 'Unknown';
+                
+                const tripComplete = row[colMap['Trip Complete']] ? row[colMap['Trip Complete']].trim().toLowerCase() : '';
+                if (tripComplete === 'yes' || tripComplete === 'y') continue;
+
+                let rawEta = etaColIdx !== undefined && row[etaColIdx] ? row[etaColIdx].trim() : '';
+                let eta = '';
+                
+                if (rawEta) {
+                    const lower = rawEta.toLowerCase();
+                    if (lower === 'onsite') eta = 'Onsite';
+                    else if (lower === 'offline') eta = 'Offline';
+                    else if (lower === 'interchange' || lower === 'inter') eta = 'Inter';
+                    else if (lower === 'cp') eta = 'CP';
+                    else if (rawEta.includes('/')) {
+                        // Normalize date to MM/DD
+                        let parts = rawEta.split('/');
+                        eta = parts[0].padStart(2, '0') + '/' + parts[1].padStart(2, '0');
+                    } else {
+                        eta = rawEta; // Fallback
+                    }
+                }
+
+                if (eta) {
+                    allEtas.add(eta);
+                }
+
+                if (!locMap.has(loc)) {
+                    locMap.set(loc, { total: 0, etas: {}, prods: new Map() });
+                }
+                const locData = locMap.get(loc);
+                
+                if (!locData.prods.has(prod)) {
+                    locData.prods.set(prod, { total: 0, etas: {}, cars: {} });
+                }
+                const prodData = locData.prods.get(prod);
+
+                const carObj = {
+                    'Waybill Date': row[colMap['Waybill Date']] ? row[colMap['Waybill Date']].trim() : '',
+                    'Vendor': row[colMap['Vendor']] ? row[colMap['Vendor']].trim() : '',
+                    'Product': rawProd,
+                    'Car Number': row[colMap['Car Number']] ? row[colMap['Car Number']].trim() : '',
+                    'Comments': row[colMap['Comments']] ? row[colMap['Comments']].trim() : ''
+                };
+
+                if (eta) {
+                    locData.total++;
+                    prodData.total++;
+                    
+                    locData.etas[eta] = (locData.etas[eta] || 0) + 1;
+                    prodData.etas[eta] = (prodData.etas[eta] || 0) + 1;
+                    if (!prodData.cars[eta]) prodData.cars[eta] = [];
+                    prodData.cars[eta].push(carObj);
                 }
             }
 
-            // Sort dates
+            // Standardize columns
+            const dateCols = [];
+            allEtas.forEach(eta => {
+                if (eta !== 'Onsite' && eta !== 'Offline' && eta !== 'Inter' && eta !== 'CP') {
+                    dateCols.push(eta);
+                }
+            });
+
             dateCols.sort((a, b) => {
-                const da = new Date(a.name + '/2026'); // append dummy year for sorting if needed
-                const db = new Date(b.name + '/2026');
+                const da = new Date(a + '/2026'); // dummy year
+                const db = new Date(b + '/2026');
                 return da - db;
             });
 
-            // Target column order: Onsite, CP, Inter, [Dates], Offline
-            let outputCols = [];
-            outputCols.push({ label: 'Onsite', key: 'Onsite' });
-            outputCols.push({ label: 'CP', key: 'CP' });
-            outputCols.push({ label: 'Inter', key: 'Inter' });
-            dateCols.forEach(d => outputCols.push({ label: d.name, key: 'Date', idx: d.idx }));
-            outputCols.push({ label: 'Offline', key: 'Offline' });
+            const outputCols = [];
+            if (allEtas.has('Onsite')) outputCols.push({ label: 'Onsite', key: 'Onsite' });
+            if (allEtas.has('CP')) outputCols.push({ label: 'CP', key: 'CP' });
+            if (allEtas.has('Inter')) outputCols.push({ label: 'Inter', key: 'Inter' });
+            dateCols.forEach(d => outputCols.push({ label: d, key: d }));
+            if (allEtas.has('Offline')) outputCols.push({ label: 'Offline', key: 'Offline' });
 
-            // Filter columns to only include populated ones
-            outputCols = outputCols.filter(c => {
-                let colIdx = c.key === 'Date' ? c.idx : colMap[c.key];
-                if (colIdx === undefined) return false; // Column completely missing
-
-                // Check if any row has a > 0 value in this column
-                for (let i = headerIdx + 1; i < lines.length; i++) {
-                    const row = lines[i];
-                    if (!row || row.length === 0 || row[0] === undefined) continue;
-                    if (row.every(c => !c.trim())) continue; // skip completely empty
-
-                    const val = row[colIdx];
-                    if (val && val.trim() !== '') {
-                        const num = parseInt(val.trim().replace(/,/g, ''), 10);
-                        if (!isNaN(num) && num > 0) return true;
-                    }
-                }
-                return false;
-            });
-
-            // Determine Highlight Date (e.g. "04/23")
-            const repDate = new Date(document.getElementById('report-date').value + 'T00:00:00');
+            const repDate = new Date();
             const mo = String(repDate.getMonth() + 1).padStart(2, '0');
             const da = String(repDate.getDate()).padStart(2, '0');
             const highlightLabel = `${mo}/${da}`;
 
             // Build Header
             const thead = document.getElementById('table-head-row');
-            thead.className = "text-slate-600 border-b border-gray-200 uppercase tracking-wider font-semibold";
-            thead.innerHTML = `<th class="px-2 py-3 align-bottom leading-tight min-w-[100px]">Delivery Location</th><th class="px-2 py-3 align-bottom leading-tight min-w-[60px]">Product</th>`;
+            thead.className = "text-slate-600 uppercase tracking-wider font-semibold";
+            thead.innerHTML = `<th class="px-2 py-3 align-bottom leading-tight min-w-[100px] border-b border-gray-200">Delivery Location</th><th class="px-2 py-3 align-bottom leading-tight min-w-[60px] border-b border-gray-200">Product</th>`;
 
             outputCols.forEach(c => {
                 let thClass = 'px-0 align-middle w-7';
                 let innerContent = `<div class="h-20 relative w-full"><div class="absolute inset-0 flex items-center justify-center"><div class="-rotate-90 whitespace-nowrap text-[10px] tracking-wider">${c.label}</div></div></div>`;
 
                 if (c.label === highlightLabel) {
-                    thead.innerHTML += `<th class="${thClass} bg-blue-50 text-blue-700">${innerContent}</th>`;
+                    thead.innerHTML += `<th class="${thClass} bg-blue-50 text-blue-700 border-b border-blue-200">${innerContent}</th>`;
                 } else if (c.label === 'Offline') {
-                    thead.innerHTML += `<th class="${thClass} text-orange-600">${innerContent}</th>`;
+                    thead.innerHTML += `<th class="${thClass} text-orange-600 border-b border-gray-200">${innerContent}</th>`;
                 } else {
-                    thead.innerHTML += `<th class="${thClass}">${innerContent}</th>`;
+                    thead.innerHTML += `<th class="${thClass} border-b border-gray-200">${innerContent}</th>`;
                 }
             });
 
-            let gtThClass = 'px-0 align-middle w-12';
+            let gtThClass = 'px-0 align-middle w-12 border-b border-slate-300';
             let gtInnerContent = `<div class="h-20 relative w-full"><div class="absolute inset-0 flex items-center justify-center"><div class="-rotate-90 text-[10px] tracking-wider leading-tight text-center">Grand<br>Total</div></div></div>`;
             thead.innerHTML += `<th class="${gtThClass} bg-slate-100 text-slate-800">${gtInnerContent}</th>`;
 
@@ -378,102 +602,111 @@
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
 
-            for (let i = headerIdx + 1; i < lines.length; i++) {
-                const row = lines[i];
-                if (!row || row.length === 0 || row[0] === undefined) continue;
+            let grandTotalOverall = 0;
+            const grandTotalEtas = {};
 
-                const loc = row[0].trim();
-                const prod = (row[1] || '').trim();
+            const sortedLocs = Array.from(locMap.keys()).sort();
 
-                if (!loc && !prod && row.every(c => !c.trim())) continue; // empty row
+            for (const loc of sortedLocs) {
+                const locData = locMap.get(loc);
+                const sortedProds = Array.from(locData.prods.keys()).sort();
 
-                const isSubtotal = loc.endsWith('Total') && loc !== 'Grand Total';
-                const isGrandTotal = loc === 'Grand Total';
+                for (const prod of sortedProds) {
+                    const prodData = locData.prods.get(prod);
+                    let html = `<tr class="transition-colors border-t-0">`;
+                    
+                    // Don't repeat location for every row if desired, but here we do simple layout.
+                    // Wait, original layout hides Location if it's the same, let's keep it simple or implement hiding.
+                    // Let's implement hiding for cleaner look.
+                    const isFirstProd = prod === sortedProds[0];
+                    html += `<td class="px-2 text-gray-900 py-1.5 leading-snug">${isFirstProd ? loc : ''}</td>`;
+                    html += `<td class="px-2 py-1.5 leading-snug">${prod}</td>`;
 
-                let trClass = 'transition-colors';
-                let tdPad = 'py-1.5';
-                if (isSubtotal) {
-                    trClass = 'bg-gray-100 font-semibold text-gray-900 border-b-2 border-gray-200';
-                    tdPad = 'py-2';
-                } else if (isGrandTotal) {
-                    trClass = 'bg-slate-800 text-white font-bold text-[11px] sm:text-xs';
-                    tdPad = 'py-2.5';
-                } else if (!loc && prod) {
-                    trClass = 'transition-colors border-t-0';
+                    outputCols.forEach(c => {
+                        const count = prodData.etas[c.key] || 0;
+                        const dispVal = count === 0 ? '-' : count;
+                        let tdClass = `px-1 py-1.5 text-center`;
+
+                        if (dispVal === '-') tdClass += ' text-gray-400';
+                        else if (c.key === 'Onsite') tdClass += ' font-medium';
+                        else if (c.key === 'Inter') tdClass += ' font-medium text-purple-600';
+                        else if (c.key === 'Offline') tdClass += ' font-medium text-orange-600';
+
+                        if (c.label === highlightLabel) {
+                            tdClass += ' font-semibold bg-blue-50 text-blue-700';
+                        }
+
+                        if (dispVal !== '-') {
+                            tdClass += ' cursor-pointer hover:bg-slate-200/50 transition-colors';
+                            const carsStr = encodeURIComponent(JSON.stringify(prodData.cars[c.key]));
+                            const colsArrayStr = `['Waybill Date','Vendor','Product','Car Number','Comments']`;
+                            const title = `Inbound - ${loc} ${prod} - ${c.label}`;
+                            html += `<td class="${tdClass}" data-cars="${carsStr}" onclick="handleCellClick(this, '${title}', ${colsArrayStr})">${dispVal}</td>`;
+                        } else {
+                            html += `<td class="${tdClass}">${dispVal}</td>`;
+                        }
+                    });
+
+                    const gtVal = prodData.total || '-';
+                    html += `<td class="px-1 bg-slate-50 font-medium py-1.5 text-center">${gtVal}</td>`;
+                    html += `</tr>`;
+                    tbody.innerHTML += html;
                 }
 
-                let html = `<tr class="${trClass}">`;
+                // Subtotal Row
+                let html = `<tr class="bg-gray-100 font-semibold text-gray-900 border-b-2 border-gray-200">`;
+                html += `<td colspan="2" class="px-2 py-2 leading-snug">${loc} Total</td>`;
 
-                // Columns 1 & 2
-                if (isGrandTotal) {
-                    html += `<td colspan="2" class="px-2 rounded-bl-lg ${tdPad} leading-snug">Grand Total</td>`;
-                } else if (isSubtotal) {
-                    html += `<td colspan="2" class="px-2 ${tdPad} leading-snug">${loc}</td>`;
-                } else {
-                    if (loc) {
-                        html += `<td class="px-2 text-gray-900 ${tdPad} leading-snug">${loc}</td>`;
-                    } else {
-                        html += `<td class="px-2 ${tdPad} leading-snug"></td>`;
-                    }
-                    html += `<td class="px-2 ${tdPad} leading-snug">${prod}</td>`;
-                }
-
-                // Data Columns
                 outputCols.forEach(c => {
-                    let val = '';
-                    if (c.key === 'CP') {
-                        val = colMap['CP'] !== undefined ? (row[colMap['CP']] || '') : '';
-                    } else if (c.key === 'Date') {
-                        val = row[c.idx] || '';
-                    } else {
-                        val = colMap[c.key] !== undefined ? (row[colMap[c.key]] || '') : '';
-                    }
-                    val = val.trim();
-                    const dispVal = val === '' ? '-' : val;
+                    const count = locData.etas[c.key] || 0;
+                    const dispVal = count === 0 ? '-' : count;
+                    let tdClass = `px-1 py-2 text-center`;
 
-                    // Add text-center to data columns so they align nicely under vertical headers
-                    let tdClass = `px-1 ${tdPad} text-center`;
+                    if (dispVal === '-') tdClass += ' text-gray-400';
+                    else if (c.key === 'Inter') tdClass += ' text-purple-700';
+                    else if (c.key === 'Offline') tdClass += ' text-orange-700';
 
-                    // Value styling based on state/value
-                    if (dispVal === '-') tdClass += isGrandTotal ? '' : ' text-gray-400';
-                    else if (c.key === 'Onsite' && isGrandTotal) tdClass += ' text-emerald-400';
-                    else if (c.key === 'Onsite' && !isSubtotal && !isGrandTotal && val !== '') tdClass += ' font-medium';
-                    else if (c.key === 'Inter' && isGrandTotal) tdClass += ' text-purple-300';
-                    else if (c.key === 'Inter' && !isSubtotal && !isGrandTotal && val !== '') tdClass += ' font-medium text-purple-600';
-                    else if (c.key === 'Inter' && isSubtotal && val !== '') tdClass += ' text-purple-700';
-                    else if (c.label === 'Offline') {
-                        if (isGrandTotal) tdClass += ' text-orange-400';
-                        else if (isSubtotal) tdClass += ' text-orange-700';
-                        else tdClass += ' font-medium text-orange-600';
-                    }
-
-                    // Highlight Column Styling
                     if (c.label === highlightLabel) {
-                        if (isGrandTotal) tdClass += ' bg-slate-700 text-blue-300';
-                        else if (isSubtotal) tdClass += ' font-bold bg-blue-100 text-blue-800';
-                        else tdClass += ' font-semibold bg-blue-50 text-blue-700';
+                        tdClass += ' font-bold bg-blue-100 text-blue-800';
                     }
 
                     html += `<td class="${tdClass}">${dispVal}</td>`;
+                    
+                    grandTotalEtas[c.key] = (grandTotalEtas[c.key] || 0) + count;
                 });
 
-                // Grand Total Column
-                const gtIdx = colMap['Grand Total'];
-                const gtVal = gtIdx !== undefined && row[gtIdx] ? row[gtIdx].trim() : '-';
-
-                if (isGrandTotal) {
-                    html += `<td class="px-1 bg-slate-900 rounded-br-lg border-l border-slate-700 ${tdPad} text-center">${gtVal}</td>`;
-                } else if (isSubtotal) {
-                    html += `<td class="px-1 bg-slate-200 ${tdPad} text-center">${gtVal}</td>`;
-                } else {
-                    html += `<td class="px-1 bg-slate-50 font-medium ${tdPad} text-center">${gtVal}</td>`;
-                }
-
+                const stTotal = locData.total || '-';
+                html += `<td class="px-1 bg-slate-200 py-2 text-center">${stTotal}</td>`;
                 html += `</tr>`;
                 tbody.innerHTML += html;
-
-                if (isGrandTotal) break; // End of table
+                
+                grandTotalOverall += locData.total;
             }
+
+            // Grand Total Row
+            let html = `<tr class="bg-slate-800 text-white font-bold text-[11px] sm:text-xs">`;
+            html += `<td colspan="2" class="px-2 rounded-bl-lg py-2.5 leading-snug">Grand Total</td>`;
+
+            outputCols.forEach(c => {
+                const count = grandTotalEtas[c.key] || 0;
+                const dispVal = count === 0 ? '-' : count;
+                let tdClass = `px-1 py-2.5 text-center`;
+
+                if (dispVal === '-') tdClass += '';
+                else if (c.key === 'Onsite') tdClass += ' text-emerald-400';
+                else if (c.key === 'Inter') tdClass += ' text-purple-300';
+                else if (c.key === 'Offline') tdClass += ' text-orange-400';
+
+                if (c.label === highlightLabel) {
+                    tdClass += ' bg-slate-700 text-blue-300';
+                }
+
+                html += `<td class="${tdClass}">${dispVal}</td>`;
+            });
+
+            html += `<td class="px-1 bg-slate-900 rounded-br-lg border-l border-slate-700 py-2.5 text-center">${grandTotalOverall}</td>`;
+            html += `</tr>`;
+            tbody.innerHTML += html;
         }
 
         function generatePOTable(tsv) {
@@ -499,7 +732,8 @@
                 const vendor = row[colMap['Vendor']] ? row[colMap['Vendor']].trim() : '';
                 const month = row[colMap['Contract Month']] ? row[colMap['Contract Month']].trim() : '';
                 const waybill = row[colMap['Waybill Date']] ? row[colMap['Waybill Date']].trim() : '';
-                const eta = row[colMap['Current ETA']] ? row[colMap['Current ETA']].trim() : '';
+                const etaColIdx = colMap['ETA'] !== undefined ? colMap['ETA'] : colMap['Current ETA'];
+                const eta = etaColIdx !== undefined && row[etaColIdx] ? row[etaColIdx].trim() : '';
                 const tripComplete = row[colMap['Trip Complete']] ? row[colMap['Trip Complete']].toLowerCase().trim() : '';
 
                 const mapKey = `${po}_${loc}_${prod}`; // Unique key to handle edge cases if PO is reused across locs
@@ -515,20 +749,34 @@
                         received: 0,
                         shipped: 0,
                         remaining: 0,
-                        etas: []
+                        etas: [],
+                        receivedCars: [],
+                        shippedCars: [],
+                        remainingCars: []
                     });
                 }
 
                 const pData = poMap.get(mapKey);
                 pData.total++;
+                
+                const carObj = {
+                    'Line Item': row[colMap['Line Item']] ? row[colMap['Line Item']].trim() : '',
+                    'Waybill Date': waybill,
+                    'Car Number': row[colMap['Car Number']] ? row[colMap['Car Number']].trim() : '',
+                    'ETA': eta,
+                    'Comments': row[colMap['Comments']] ? row[colMap['Comments']].trim() : ''
+                };
 
                 if (tripComplete === 'yes') {
                     pData.received++;
+                    pData.receivedCars.push(carObj);
                 } else {
                     if (waybill) {
                         pData.shipped++;
+                        pData.shippedCars.push(carObj);
                     } else {
                         pData.remaining++;
+                        pData.remainingCars.push(carObj);
                     }
                     if (eta) {
                         pData.etas.push(eta);
@@ -667,6 +915,13 @@
                 return '';
             }
 
+            function buildTD(cars, count, baseClass, extraClass, title, cols) {
+                if (count === 0) return `<td class="${baseClass} ${extraClass}">-</td>`;
+                const carsStr = encodeURIComponent(JSON.stringify(cars));
+                const colsArrayStr = `['${cols.join("','")}']`;
+                return `<td class="${baseClass} ${extraClass} cursor-pointer hover:bg-slate-200/50" data-cars="${carsStr}" onclick="handleCellClick(this, '${title}', ${colsArrayStr})">${count}</td>`;
+            }
+
             for (let i = 0; i < renderRows.length; i++) {
                 let r = renderRows[i];
                 let isFirstOfLoc = i === 0 || renderRows[i - 1].loc !== r.loc;
@@ -724,9 +979,9 @@
                         <td class="${tdClass}">${p.vendor}</td>
                         <td class="${tdNumClass} text-gray-500">${p.month}</td>
                         <td class="${tdNumClass}">${p.total}</td>
-                        <td class="${tdNumClass} text-emerald-600">${p.received > 0 ? p.received : '-'}</td>
-                        <td class="${tdNumClass} text-blue-600">${p.shipped > 0 ? p.shipped : '-'}</td>
-                        <td class="${tdNumClass} text-red-600">${p.remaining > 0 ? p.remaining : '-'}</td>
+                        ${buildTD(p.receivedCars, p.received, tdNumClass, 'text-emerald-600', 'Received Cars', ['Line Item', 'Waybill Date', 'Car Number', 'Comments'])}
+                        ${buildTD(p.shippedCars, p.shipped, tdNumClass, 'text-blue-600', 'Shipped Cars', ['Line Item', 'Waybill Date', 'Car Number', 'ETA', 'Comments'])}
+                        ${buildTD(p.remainingCars, p.remaining, tdNumClass, 'text-red-600', 'Remaining Cars', ['Line Item', 'Comments'])}
                         <td class="${tdClass} ${etaStyle}">${etaText}</td>
                     </tr>`;
                 }
@@ -739,12 +994,68 @@
             tbody.innerHTML = html;
         }
 
+        // Handle click on cell with data-cars
+        window.handleCellClick = function(el, title, cols) {
+            const carsStr = el.getAttribute('data-cars');
+            if (!carsStr) return;
+            const cars = JSON.parse(decodeURIComponent(carsStr));
+            openModal(title, cols, cars);
+        };
+
         // Register Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js');
             });
         }
+
+        // Pull to refresh logic
+        let touchStartVertical = 0;
+        let pStart = { x: 0, y: 0 };
+        const content = document.getElementById('main-content');
+        let isPulling = false;
+
+        document.addEventListener('touchstart', function (e) {
+            const matrix = document.querySelector('.matrix-container');
+            const isAtTop = window.scrollY === 0 && (!matrix || matrix.scrollTop === 0);
+            if (isAtTop) {
+                pStart.y = e.touches[0].screenY;
+                isPulling = true;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', function (e) {
+            if (!isPulling) return;
+            const matrix = document.querySelector('.matrix-container');
+            const isAtTop = window.scrollY === 0 && (!matrix || matrix.scrollTop === 0);
+            const y = e.touches[0].screenY;
+            if (y > pStart.y && isAtTop) {
+                // Pulling down
+                const pullDistance = y - pStart.y;
+                if (pullDistance > 60) {
+                    document.body.classList.add('refreshing');
+                    content.classList.add('refreshing-body');
+                }
+            } else {
+                isPulling = false;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', function (e) {
+            if (!isPulling) return;
+            isPulling = false;
+            if (document.body.classList.contains('refreshing')) {
+                fetchData(true);
+            }
+        }, { passive: true });
+
+        // Auto update every 6 hours (21600000 ms)
+        setInterval(() => {
+            fetchData(true);
+        }, 6 * 60 * 60 * 1000);
+
+        // Initial fetch
+        fetchData();
     </script>
 </body>
 
