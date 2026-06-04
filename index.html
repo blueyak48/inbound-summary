@@ -557,7 +557,7 @@
                 if (!prod) prod = 'Unknown';
                 
                 const tripComplete = row[colMap['Trip Complete']] ? row[colMap['Trip Complete']].trim().toLowerCase() : '';
-                if (tripComplete === 'yes' || tripComplete === 'y') continue;
+                if (tripComplete === 'yes' || tripComplete === 'y' || tripComplete === 'cancelled') continue;
 
                 let rawEta = etaColIdx !== undefined && row[etaColIdx] ? row[etaColIdx].trim() : '';
                 let eta = '';
@@ -799,6 +799,8 @@
                 const eta = etaColIdx !== undefined && row[etaColIdx] ? row[etaColIdx].trim() : '';
                 const tripComplete = row[colMap['Trip Complete']] ? row[colMap['Trip Complete']].toLowerCase().trim() : '';
 
+                if (tripComplete === 'cancelled') continue;
+
                 const mapKey = `${po}_${loc}_${prod}`; // Unique key to handle edge cases if PO is reused across locs
 
                 if (!poMap.has(mapKey)) {
@@ -810,6 +812,7 @@
                         month: month,
                         total: 0,
                         received: 0,
+                        yesCount: 0,
                         shipped: 0,
                         remaining: 0,
                         etas: [],
@@ -830,7 +833,11 @@
                     'Comments': row[colMap['Comments']] ? row[colMap['Comments']].trim() : ''
                 };
 
-                if (tripComplete === 'yes') {
+                if (tripComplete === 'yes' || tripComplete === 'y') {
+                    pData.yesCount++;
+                    pData.received++;
+                    pData.receivedCars.push(carObj);
+                } else if (tripComplete === 'unloaded') {
                     pData.received++;
                     pData.receivedCars.push(carObj);
                 } else {
@@ -847,7 +854,7 @@
                 }
             }
 
-            const activePOs = Array.from(poMap.values()).filter(p => p.total > p.received);
+            const activePOs = Array.from(poMap.values()).filter(p => p.total > p.yesCount);
 
             activePOs.sort((a, b) => {
                 if (a.loc !== b.loc) return a.loc.localeCompare(b.loc);
@@ -1074,7 +1081,7 @@
                 if (!po) continue;
                 
                 const tripComplete = row[colMap['Trip Complete']] ? row[colMap['Trip Complete']].trim().toLowerCase() : '';
-                if (tripComplete === 'yes' || tripComplete === 'y') continue;
+                if (tripComplete === 'yes' || tripComplete === 'y' || tripComplete === 'cancelled') continue;
 
                 const etaColIdx = colMap['ETA'] !== undefined ? colMap['ETA'] : colMap['Current ETA'];
                 let eta = etaColIdx !== undefined && row[etaColIdx] ? row[etaColIdx].trim() : '';
