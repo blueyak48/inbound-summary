@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rail-summary-v2';
+const CACHE_NAME = 'rail-summary-v3';
 const ASSETS = [
     './',
     './index.html',
@@ -11,8 +11,17 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
+    self.skipWaiting();
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    );
+});
+
+self.addEventListener('activate', (e) => {
+    e.waitUntil(
+        caches.keys()
+            .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+            .then(() => self.clients.claim())
     );
 });
 

@@ -356,9 +356,10 @@
         ];
 
         async function fetchTSV(url) {
+            const bustedUrl = url + (url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
             for (const proxyBase of PROXIES) {
                 try {
-                    const response = await fetch(proxyBase + encodeURIComponent(url));
+                    const response = await fetch(proxyBase + encodeURIComponent(bustedUrl), { cache: 'no-store' });
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     return await response.text();
                 } catch (err) {
