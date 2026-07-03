@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rail-summary-v5';
+const CACHE_NAME = 'rail-summary-v6';
 const ASSETS = [
     './',
     './index.html',

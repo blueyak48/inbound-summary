@@ -1,6 +1,6 @@
 {
-  "name": "Rail Inbound Summary",
-  "short_name": "Rail Summary",
+  "name": "Rail",
+  "short_name": "Rail",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
