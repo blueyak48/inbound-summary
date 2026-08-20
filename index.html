@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rail Inbound Summary</title>
     <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-title" content="Rail">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -297,101 +298,45 @@
     <script>
         let currentTab = 'inbound';
         let isFetching = false;
-        let cachedTSV = { data: null };
+        let cachedData = { data: null };
         let lastFetchTime = { data: 0 };
 
-        const DATA_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTkTbgVZmqUfy2tr9WS7lIkFjFPe2_6ws1YeuZdvB5syDdbCQCRkGwCoOVM-lcjVNEUo-scS4QajqJV/pub?gid=0&single=true&output=csv";
+        const SPREADSHEET_ID = '1x5OeCfsjJLZgNkiYyqiP7_-_3sqLvKg1Qb7A6irRVmw';
+        const SHEET_NAME = 'Rail Log Sheet';
+        const SHEETS_API_KEY = 'AIzaSyCXueSwkiTHFJk5DK4LUVTI2QWunSZkzzw';
+        const DATA_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}?key=${SHEETS_API_KEY}`;
 
-        function parseCSV(text) {
-            const lines = [];
-            let currentLine = [];
-            let currentField = '';
-            let inQuotes = false;
-            
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                if (inQuotes) {
-                    if (char === '"') {
-                        if (i + 1 < text.length && text[i + 1] === '"') {
-                            currentField += '"';
-                            i++;
-                        } else {
-                            inQuotes = false;
-                        }
-                    } else {
-                        currentField += char;
-                    }
-                } else {
-                    if (char === '"') {
-                        inQuotes = true;
-                    } else if (char === ',') {
-                        currentLine.push(currentField);
-                        currentField = '';
-                    } else if (char === '\r') {
-                        // ignore
-                    } else if (char === '\n') {
-                        currentLine.push(currentField);
-                        lines.push(currentLine);
-                        currentLine = [];
-                        currentField = '';
-                    } else {
-                        currentField += char;
-                    }
-                }
-            }
-            if (currentField || text[text.length - 1] === ',') {
-                currentLine.push(currentField);
-            }
-            if (currentLine.length > 0) {
-                lines.push(currentLine);
-            }
-            return lines;
-        }
-
-        // Fallback array of CORS proxies to ensure high availability
-        const PROXIES = [
-            "https://api.codetabs.com/v1/proxy?quest=",
-            "https://api.allorigins.win/raw?url=",
-            "https://corsproxy.io/?"
-        ];
-
-        async function fetchTSV(url) {
-            for (const proxyBase of PROXIES) {
-                try {
-                    const response = await fetch(proxyBase + encodeURIComponent(url));
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return await response.text();
-                } catch (err) {
-                    console.warn(`Proxy ${proxyBase} failed for ${url}:`, err);
-                }
-            }
-            throw new Error('All CORS proxies failed.');
+        async function fetchSheetRows(url) {
+            const response = await fetch(url, { cache: 'no-store' });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const json = await response.json();
+            return json.values || [];
         }
 
         async function fetchData(force = false, isSilent = false) {
             if (isFetching) return;
 
             const now = Date.now();
-            const needsData = force || !cachedTSV.data || (now - lastFetchTime.data >= 21600000);
+            const needsData = force || !cachedData.data || (now - lastFetchTime.data >= 21600000);
 
             if (!needsData) {
-                renderTab(cachedTSV.data);
+                renderTab(cachedData.data);
                 return;
             }
 
             isFetching = true;
 
-            if (!isSilent && !cachedTSV.data) {
+            if (!isSilent && !cachedData.data) {
                 document.getElementById('loading').classList.remove('hidden');
                 document.getElementById('preview-view').classList.add('hidden');
             }
 
             try {
-                const res = await fetchTSV(DATA_URL);
-                cachedTSV.data = res;
+                const res = await fetchSheetRows(DATA_URL);
+                cachedData.data = res;
                 lastFetchTime.data = Date.now();
 
-                renderTab(cachedTSV.data);
+                renderTab(cachedData.data);
             } catch (err) {
                 if (!isSilent) alert('Error fetching data: ' + err.message);
                 console.error(err);
@@ -447,13 +392,13 @@
             if (e.target.id === 'car-modal') closeModal();
         });
 
-        function renderTab(tsv) {
+        function renderTab(rows) {
             if (currentTab === 'inbound') {
-                generateTable(tsv);
+                generateTable(rows);
             } else if (currentTab === 'po') {
-                generatePOTable(tsv);
+                generatePOTable(rows);
             } else {
-                generateServiceStorageTable(tsv);
+                generateServiceStorageTable(rows);
             }
             const captureArea = document.getElementById('capture-area');
             if (currentTab === 'service') {
@@ -568,9 +513,8 @@
             }, 100);
         });
 
-        function generateTable(tsv) {
-            const parsed = parseCSV(tsv);
-            const lines = parsed.filter(row => row.some(col => col.trim().length > 0));
+        function generateTable(rows) {
+            const lines = rows.filter(row => row.some(col => col.trim().length > 0));
             if (lines.length < 2) return;
 
             const headers = lines[0].map(h => h.trim());
@@ -819,9 +763,8 @@
             tbody.innerHTML += html;
         }
 
-        function generatePOTable(tsv) {
-            const parsed = parseCSV(tsv);
-            const lines = parsed.filter(row => row.some(col => col.trim().length > 0));
+        function generatePOTable(rows) {
+            const lines = rows.filter(row => row.some(col => col.trim().length > 0));
             if (lines.length === 0) return;
 
             const headers = lines[0].map(h => h.trim());
@@ -1114,9 +1057,8 @@
             tbody.innerHTML = html;
         }
 
-        function generateServiceStorageTable(tsv) {
-            const parsed = parseCSV(tsv);
-            const lines = parsed.filter(row => row.some(col => col.trim().length > 0));
+        function generateServiceStorageTable(rows) {
+            const lines = rows.filter(row => row.some(col => col.trim().length > 0));
             if (lines.length === 0) return;
 
             const headers = lines[0].map(h => h.trim());
