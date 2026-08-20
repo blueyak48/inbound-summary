@@ -763,6 +763,18 @@
             tbody.innerHTML += html;
         }
 
+        const MONTH_ORDER = {
+            jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
+            apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6,
+            aug: 7, august: 7, sep: 8, sept: 8, september: 8,
+            oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11
+        };
+
+        function monthIndex(month) {
+            const idx = MONTH_ORDER[month.toLowerCase().trim()];
+            return idx !== undefined ? idx : 99;
+        }
+
         function generatePOTable(rows) {
             const lines = rows.filter(row => row.some(col => col.trim().length > 0));
             if (lines.length === 0) return;
@@ -850,9 +862,13 @@
             activePOs.sort((a, b) => {
                 if (a.loc !== b.loc) return a.loc.localeCompare(b.loc);
                 if (a.prod !== b.prod) return a.prod.localeCompare(b.prod);
+                const monthDiff = monthIndex(a.month) - monthIndex(b.month);
+                if (monthDiff !== 0) return monthDiff;
+                const poNumA = parseInt(a.po, 10);
+                const poNumB = parseInt(b.po, 10);
+                if (!isNaN(poNumA) && !isNaN(poNumB) && poNumA !== poNumB) return poNumA - poNumB;
                 if (a.po !== b.po) return a.po.localeCompare(b.po);
-                if (a.vendor !== b.vendor) return a.vendor.localeCompare(b.vendor);
-                return a.month.localeCompare(b.month);
+                return a.vendor.localeCompare(b.vendor);
             });
 
             const thead = document.getElementById('table-head-row');
