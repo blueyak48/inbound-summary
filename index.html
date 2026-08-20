@@ -770,9 +770,15 @@
             oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11
         };
 
-        function monthIndex(month) {
-            const idx = MONTH_ORDER[month.toLowerCase().trim()];
-            return idx !== undefined ? idx : 99;
+        // The sheet has no year, so purchase orders are placed on a rolling 12-month
+        // window that starts 3 months before the current month: the most recent
+        // few months (likely delayed, still-open orders) sort as "past", and
+        // everything else rolls forward from the current month before wrapping
+        // into "next year" territory at the far end of the window.
+        function monthIndex(month, windowStart) {
+            const raw = MONTH_ORDER[month.toLowerCase().trim()];
+            if (raw === undefined) return 99;
+            return (raw - windowStart + 12) % 12;
         }
 
         function generatePOTable(rows) {
@@ -859,10 +865,12 @@
 
             const activePOs = Array.from(poMap.values()).filter(p => p.total > p.yesCount);
 
+            const monthWindowStart = (new Date().getMonth() - 3 + 12) % 12;
+
             activePOs.sort((a, b) => {
                 if (a.loc !== b.loc) return a.loc.localeCompare(b.loc);
                 if (a.prod !== b.prod) return a.prod.localeCompare(b.prod);
-                const monthDiff = monthIndex(a.month) - monthIndex(b.month);
+                const monthDiff = monthIndex(a.month, monthWindowStart) - monthIndex(b.month, monthWindowStart);
                 if (monthDiff !== 0) return monthDiff;
                 const poNumA = parseInt(a.po, 10);
                 const poNumB = parseInt(b.po, 10);
